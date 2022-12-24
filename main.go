@@ -36,8 +36,10 @@ func main() {
 	// streamPlayer := output.CreateStreamPlayer()
 	// streamPlayer.Launch([]*output.NamedPipe{audioOutput, videoOutput})
 
+	muxerDone := make(chan bool)
+
 	outputWriter := output.CreateMuxer()
-	outputWriter.Launch(streams, "muxed.mkv")
+	outputWriter.Launch(streams, "muxed.mkv", muxerDone)
 	//outputWriter := output.CreateStreamPlayer()
 	//outputWriter.Launch(streams)
 
@@ -52,4 +54,6 @@ func main() {
 	for _, stream := range streams {
 		stream.Output.Close()
 	}
+
+	<-muxerDone
 }

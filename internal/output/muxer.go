@@ -13,7 +13,7 @@ func CreateMuxer() StreamWriter {
 
 type FFmpegMuxer struct{}
 
-func (muxer *FFmpegMuxer) Launch(streams []*StreamDownloader, outputPath string) {
+func (muxer *FFmpegMuxer) Launch(streams []*StreamDownloader, outputPath string, done chan bool) {
 	args := []string{"-y"}
 	for _, stream := range streams {
 		args = append(args, "-i", stream.Output.Path)
@@ -34,5 +34,6 @@ func (muxer *FFmpegMuxer) Launch(streams []*StreamDownloader, outputPath string)
 			logger.Log.Debug("out:", outb.String(), "err:", errb.String())
 			panic(err)
 		}
+		close(done)
 	}()
 }

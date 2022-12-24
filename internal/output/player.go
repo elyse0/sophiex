@@ -36,8 +36,9 @@ func (player *VlcPlayer) Launch(streams []*StreamDownloader) {
 		//		fmt.Print(err)
 		//	}
 		//}()
+		done := make(chan bool)
 
 		muxer := CreateMuxer()
-		muxer.Launch(streams, muxerOutput.Path)
+		muxer.Launch(streams, muxerOutput.Path, done)
 	}
 }

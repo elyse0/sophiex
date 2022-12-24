@@ -34,5 +34,5 @@ type StreamPlayer interface {
 }
 
 type StreamWriter interface {
-	Launch(streams []*StreamDownloader, outputPath string)
+	Launch(streams []*StreamDownloader, outputPath string, done chan bool)
 }
