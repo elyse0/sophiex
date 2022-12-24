@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"sophiex/internal/logger"
 	"sophiex/internal/output"
 	"sync"
 )
@@ -12,7 +13,7 @@ func getAudioUrls() []string {
 		urls = append(urls, fmt.Sprintf("http://localhost:8000/stream_3/data%02d.ts", i))
 	}
 
-	fmt.Printf("%d audio urls", len(urls))
+	logger.Log.Debug("%d audio urls", len(urls))
 	return urls
 }
 
@@ -22,7 +23,7 @@ func getVideoUrls() []string {
 		urls = append(urls, fmt.Sprintf("http://localhost:8000/stream_0/data%02d.ts", i))
 	}
 
-	fmt.Printf("%d video urls", len(urls))
+	logger.Log.Debug("%d audio urls", len(urls))
 	return urls
 }
 

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"os/exec"
+	"sophiex/internal/logger"
 )
 
 func CreateMuxer() StreamWriter {
@@ -27,10 +28,10 @@ func (muxer *FFmpegMuxer) Launch(streams []*StreamDownloader, outputPath string)
 	command.Stderr = &errb
 
 	go func() {
-		fmt.Printf("%v\n", command.Args)
+		logger.Log.Debug("%v\n", command.Args)
 		err := command.Run()
 		if err != nil {
-			fmt.Println("out:", outb.String(), "err:", errb.String())
+			logger.Log.Debug("out:", outb.String(), "err:", errb.String())
 			panic(err)
 		}
 	}()

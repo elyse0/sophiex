@@ -1,9 +1,9 @@
 package downloader
 
 import (
-	"fmt"
 	"os"
 	"sophiex/internal/downloader/fragment"
+	"sophiex/internal/logger"
 	"sophiex/internal/utils"
 	"sync"
 )
@@ -29,9 +29,9 @@ func (workerPool *WorkerPool) initialize(urls []string) {
 
 func (workerPool *WorkerPool) worker() {
 	for request := range workerPool.requests {
-		fmt.Printf("Request url: %s\n", request.Url)
+		logger.Log.Debug("Request url: %s\n", request.Url)
 		response, err := httpService.get(request.Url)
-		fmt.Printf("Response url: %s\n", request.Url)
+		logger.Log.Debug("Response url: %s\n", request.Url)
 		if err != nil {
 			panic("Http error")
 		}
@@ -48,7 +48,7 @@ func (workerPool *WorkerPool) worker() {
 
 func (workerPool *WorkerPool) run(numberOfWorkers int) {
 	for i := 0; i < numberOfWorkers; i++ {
-		fmt.Printf("Creating worker no. %d\n", i)
+		logger.Log.Debug("Creating worker no. %d\n", i)
 		workerPool.manager.Add(1)
 		go workerPool.worker()
 	}
