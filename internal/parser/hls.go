@@ -11,7 +11,7 @@ type HlsFragment struct {
 	MediaSequence int     `json:"mediaSequence"`
 	Discontinuity int     `json:"discontinuity"`
 	Url           string  `json:"url"`
-	Duration      float32 `json:"duration"`
+	Duration      float64 `json:"duration"`
 	Start         float32 `json:"start"`
 	End           float32 `json:"end"`
 }
@@ -26,7 +26,7 @@ func (mediaManifest HlsMediaManifest) GetFragments() ([]HlsFragment, error) {
 
 	mediaSequence := 0
 	discontinuity := 0
-	var duration float32 = 0
+	var duration float64 = 0
 
 	for _, line := range strings.Split(strings.TrimSuffix(mediaManifest.manifest, "\n"), "\n") {
 		line = strings.TrimSpace(line)
@@ -54,6 +54,10 @@ func (mediaManifest HlsMediaManifest) GetFragments() ([]HlsFragment, error) {
 			mediaSequence += 1
 		} else if strings.HasPrefix(line, "#EXT-X-MAP") {
 
+		} else if strings.HasPrefix(line, "#EXTINF") {
+			re := regexp.MustCompile(`#EXTINF\s*:\s*([\d+.]+)`)
+			match := re.FindStringSubmatch(line)
+			duration, _ = strconv.ParseFloat(match[1], 64)
 		} else if strings.HasPrefix(line, "#EXT-X-MEDIA-SEQUENCE") {
 			re := regexp.MustCompile(`#EXT-X-MEDIA-SEQUENCE\s*:\s*(\d+)`)
 			match := re.FindStringSubmatch(line)
