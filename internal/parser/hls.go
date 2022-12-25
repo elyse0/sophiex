@@ -8,12 +8,12 @@ import (
 )
 
 type HlsFragment struct {
-	mediaSequence int
-	discontinuity int
-	url           string
-	duration      float32
-	start         float32
-	end           float32
+	MediaSequence int     `json:"mediaSequence"`
+	Discontinuity int     `json:"discontinuity"`
+	Url           string  `json:"url"`
+	Duration      float32 `json:"duration"`
+	Start         float32 `json:"start"`
+	End           float32 `json:"end"`
 }
 
 type HlsMediaManifest struct {
@@ -43,12 +43,12 @@ func (mediaManifest HlsMediaManifest) GetFragments() ([]HlsFragment, error) {
 			}
 
 			fragments = append(fragments, HlsFragment{
-				mediaSequence: mediaSequence,
-				discontinuity: discontinuity,
-				url:           fragmentUrl,
-				duration:      duration,
-				start:         0,
-				end:           0,
+				MediaSequence: mediaSequence,
+				Discontinuity: discontinuity,
+				Url:           fragmentUrl,
+				Duration:      duration,
+				Start:         0,
+				End:           0,
 			})
 
 			mediaSequence += 1
