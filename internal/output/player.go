@@ -5,40 +5,42 @@ import (
 	"os/exec"
 )
 
-type VlcPlayer struct {
+type MpvPlayer struct {
+	bin string
 }
 
 func CreateStreamPlayer() StreamPlayer {
-	return &VlcPlayer{}
+	return &MpvPlayer{
+		bin: "mpv",
+	}
 }
 
-func (player *VlcPlayer) Launch(streams []*StreamDownloader) {
-	var command *exec.Cmd
+func (player *MpvPlayer) Launch(streams []*StreamDownloader, done chan bool) {
+	var playerCommand *exec.Cmd
 	if len(streams) == 1 {
-		command = exec.Command("vlc", streams[0].Output.Path)
+		playerCommand = exec.Command(player.bin, streams[0].Output.Path)
+
 		go func() {
-			err := command.Run()
+			err := playerCommand.Run()
 			if err != nil {
 				fmt.Print(err)
 			}
 		}()
 
-	} else {
-		muxerOutput := CreateNamedPipe()
-		muxerOutput.Open()
-		defer muxerOutput.Close()
-
-		//command = exec.Command("vlc", muxerOutput.Path)
-
-		//go func() {
-		//	err := command.Run()
-		//	if err != nil {
-		//		fmt.Print(err)
-		//	}
-		//}()
-		done := make(chan bool)
-
-		muxer := CreateMuxer()
-		muxer.Launch(streams, muxerOutput.Path, done)
+		close(done)
+		return
 	}
+
+	playerCommand = exec.Command(player.bin, "-")
+	playerStdin, _ := playerCommand.StdinPipe()
+
+	muxer := CreateMuxer()
+	muxer.WriteTo(streams, playerStdin, done)
+
+	go func() {
+		err := playerCommand.Run()
+		if err != nil {
+			fmt.Print(err)
+		}
+	}()
 }

@@ -30,7 +30,7 @@ func CreateHlsStreamDownloader(urls []string, outputStream *StreamOutput) *Strea
 }
 
 type StreamPlayer interface {
-	Launch(streams []*StreamDownloader)
+	Launch(streams []*StreamDownloader, done chan bool)
 }
 
 type StreamWriter interface {
