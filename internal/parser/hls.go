@@ -8,6 +8,18 @@ import (
 	"time"
 )
 
+type HlsInitialization struct {
+	Url string `json:"url"`
+}
+
+func (initialization *HlsInitialization) IsEmpty() bool {
+	if initialization.Url == "" {
+		return true
+	}
+
+	return false
+}
+
 type HlsFragment struct {
 	MediaSequence int    `json:"mediaSequence"`
 	Discontinuity int    `json:"discontinuity"`
@@ -17,13 +29,27 @@ type HlsFragment struct {
 	End           int64  `json:"end"`      // Unix milliseconds
 }
 
+func (fragment *HlsFragment) IsEmpty() bool {
+	if fragment.Url == "" {
+		return true
+	}
+
+	return false
+}
+
 type HlsMediaManifest struct {
 	manifest     string
 	manifestUrl  string
 	isLivestream bool
 }
 
-func (mediaManifest HlsMediaManifest) GetFragments() ([]HlsFragment, error) {
+type HlsMediaManifestParseResult struct {
+	Initialization HlsInitialization
+	Fragments      []HlsFragment
+}
+
+func (mediaManifest HlsMediaManifest) Parse() (HlsMediaManifestParseResult, error) {
+	var initialization HlsInitialization
 	var fragments []HlsFragment
 
 	var programDateTime int64
@@ -68,6 +94,22 @@ func (mediaManifest HlsMediaManifest) GetFragments() ([]HlsFragment, error) {
 
 			mediaSequence += 1
 		} else if strings.HasPrefix(line, "#EXT-X-MAP") {
+			// FIXME: Handle Byte-Range, e.g. #EXT-X-MAP:URI="main.mp4",BYTERANGE="560@0"
+			re := regexp.MustCompile(`#EXT-X-MAP\s*:\s*URI\s*=\s*"([^"]+)"`)
+			match := re.FindStringSubmatch(line)
+
+			var initializationUrl string
+			urlMatch, _ := regexp.MatchString("^https?://", match[0])
+			if urlMatch {
+				initializationUrl = match[0]
+			} else {
+				urlJoin, _ := url.JoinPath(mediaManifest.manifestUrl, match[0])
+				initializationUrl = urlJoin
+			}
+
+			initialization = HlsInitialization{
+				Url: initializationUrl,
+			}
 
 		} else if strings.HasPrefix(line, "#EXTINF") {
 			re := regexp.MustCompile(`#EXTINF\s*:\s*([\d+.]+)`)
@@ -86,5 +128,8 @@ func (mediaManifest HlsMediaManifest) GetFragments() ([]HlsFragment, error) {
 		}
 	}
 
-	return fragments, nil
+	return HlsMediaManifestParseResult{
+		Initialization: initialization,
+		Fragments:      fragments,
+	}, nil
 }
