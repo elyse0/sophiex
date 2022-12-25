@@ -21,7 +21,7 @@ type HlsMediaManifest struct {
 	manifestUrl string
 }
 
-func (mediaManifest HlsMediaManifest) GetFragments() {
+func (mediaManifest HlsMediaManifest) GetFragments() ([]HlsFragment, error) {
 	var fragments []HlsFragment
 
 	mediaSequence := 0
@@ -60,4 +60,6 @@ func (mediaManifest HlsMediaManifest) GetFragments() {
 			mediaSequence, _ = strconv.Atoi(match[1])
 		}
 	}
+
+	return fragments, nil
 }
