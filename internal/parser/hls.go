@@ -52,9 +52,9 @@ func (mediaManifest HlsMediaManifest) GetFragments() ([]HlsFragment, error) {
 			})
 
 			mediaSequence += 1
-		} else if strings.HasPrefix("#EXT-X-MAP", line) {
+		} else if strings.HasPrefix(line, "#EXT-X-MAP") {
 
-		} else if strings.HasPrefix("#EXT-X-MEDIA-SEQUENCE", line) {
+		} else if strings.HasPrefix(line, "#EXT-X-MEDIA-SEQUENCE") {
 			re := regexp.MustCompile(`#EXT-X-MEDIA-SEQUENCE\s*:\s*(\d+)`)
 			match := re.FindStringSubmatch(line)
 			mediaSequence, _ = strconv.Atoi(match[1])
