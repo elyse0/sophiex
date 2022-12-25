@@ -25,11 +25,25 @@ func createHttpService() *HttpService {
 	return &httpService
 }
 
-func (httpService *HttpService) get(url string) (*http.Response, error) {
+type HttpRequestConfig struct {
+	Headers map[string]string
+}
+
+func addRequestHeaders(request *http.Request, headers map[string]string) *http.Request {
+	for key, value := range headers {
+		request.Header.Set(key, value)
+	}
+
+	return request
+}
+
+func (httpService *HttpService) get(url string, config HttpRequestConfig) (*http.Response, error) {
 	request, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
 		panic(err)
 	}
+
+	addRequestHeaders(request, config.Headers)
 
 	response, err := httpService.client.Do(request)
 	if err != nil {

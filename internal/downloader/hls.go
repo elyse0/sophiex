@@ -30,7 +30,9 @@ func (workerPool *WorkerPool) initialize(urls []string) {
 func (workerPool *WorkerPool) worker() {
 	for request := range workerPool.requests {
 		logger.Log.Debug("Request url: %s\n", request.Url)
-		response, err := httpService.get(request.Url)
+		response, err := httpService.get(request.Url, HttpRequestConfig{
+			Headers: nil,
+		})
 		logger.Log.Debug("Response url: %s\n", request.Url)
 		if err != nil {
 			panic("Http error")
