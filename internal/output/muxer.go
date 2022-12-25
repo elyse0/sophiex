@@ -1,39 +1,64 @@
 package output
 
 import (
-	"bytes"
-	"fmt"
+	"io"
+	"os"
 	"os/exec"
 	"sophiex/internal/logger"
 )
 
-func CreateMuxer() StreamWriter {
+func CreateMuxer() *FFmpegMuxer {
 	return &FFmpegMuxer{}
 }
 
 type FFmpegMuxer struct{}
 
-func (muxer *FFmpegMuxer) Launch(streams []*StreamDownloader, outputPath string, done chan bool) {
+func (muxer *FFmpegMuxer) WriteTo(streams []*StreamDownloader, output io.Writer, done chan bool) {
+	logger.Log.Debug("FfmpegMuxer: Writing to stdout")
+
+	args := []string{"-y"}
+	for _, stream := range streams {
+		args = append(args, "-i", stream.Output.Path)
+	}
+	args = append(args, "-c:a", "aac", "-c:v", "copy", "-f", "matroska", "-")
+
+	command := exec.Command("ffmpeg", args...)
+	command.Stdout = output
+
+	go func() {
+		logger.Log.Debug("%v\n", command.Args)
+
+		err := command.Run()
+		if err != nil {
+			panic(err)
+		}
+
+		close(done)
+	}()
+}
+
+func (muxer *FFmpegMuxer) WriteToFile(streams []*StreamDownloader, outputPath string, done chan bool) {
+	logger.Log.Debug("FfmpegMuxer: Writing to file")
+
 	args := []string{"-y"}
 	for _, stream := range streams {
 		args = append(args, "-i", stream.Output.Path)
 	}
 	args = append(args, "-c", "copy", outputPath)
-	//args = append(args, "-f", "matroska", outputPath)
 
 	command := exec.Command("ffmpeg", args...)
 
-	var outb, errb bytes.Buffer
-	command.Stdout = &outb
-	command.Stderr = &errb
+	command.Stdout = os.Stdout
+	command.Stderr = os.Stderr
 
 	go func() {
 		logger.Log.Debug("%v\n", command.Args)
+
 		err := command.Run()
 		if err != nil {
-			logger.Log.Debug("out:", outb.String(), "err:", errb.String())
 			panic(err)
 		}
+
 		close(done)
 	}()
 }

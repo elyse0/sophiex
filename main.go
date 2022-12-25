@@ -39,9 +39,11 @@ func main() {
 	muxerDone := make(chan bool)
 
 	outputWriter := output.CreateMuxer()
-	outputWriter.Launch(streams, "muxed.mkv", muxerDone)
-	//outputWriter := output.CreateStreamPlayer()
-	//outputWriter.Launch(streams)
+	outputWriter.WriteToFile(streams, "muxed.mkv", muxerDone)
+	// outputWriter.WriteTo(streams, muxerDone)
+
+	// outputWriter := output.CreateStreamPlayer()
+	// outputWriter.Launch(streams, muxerDone)
 
 	streamManager := &sync.WaitGroup{}
 	for _, stream := range streams {
