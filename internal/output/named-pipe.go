@@ -5,6 +5,7 @@ import (
 	"github.com/google/uuid"
 	"os"
 	"path/filepath"
+	"sophiex/internal/logger"
 	"syscall"
 )
 
@@ -34,11 +35,18 @@ func (namedPipe *StreamOutput) Open() {
 }
 
 func (namedPipe *StreamOutput) Close() {
+	logger.Log.Debug("Closing pipe")
 	if namedPipe.Stream == nil {
 		return
 	}
 
-	err := os.Remove(namedPipe.Path)
+	err := namedPipe.Stream.Close()
+	if err != nil {
+		panic(err)
+		return
+	}
+
+	err = os.Remove(namedPipe.Path)
 	if err != nil {
 		panic("Couldn't close NamedPipe")
 	}
