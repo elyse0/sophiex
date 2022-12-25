@@ -18,18 +18,18 @@ type HlsFragment struct {
 }
 
 type HlsMediaManifest struct {
-	manifest    string
-	manifestUrl string
+	manifest     string
+	manifestUrl  string
+	isLivestream bool
 }
 
 func (mediaManifest HlsMediaManifest) GetFragments() ([]HlsFragment, error) {
 	var fragments []HlsFragment
 
-	var isLive = strings.Contains(mediaManifest.manifest, "#EXT-X-PLAYLIST-TYPE:VOD")
 	var programDateTime int64
 
 	// Some livestreams don't provide program date times, this way at least we can approximate it.
-	if isLive {
+	if mediaManifest.isLivestream {
 		programDateTime = time.Now().UnixMilli()
 	} else {
 		programDateTime = 0
