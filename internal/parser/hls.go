@@ -3,6 +3,7 @@ package parser
 import (
 	"net/url"
 	"regexp"
+	"sophiex/internal/utils"
 	"strconv"
 	"strings"
 	"time"
@@ -75,7 +76,8 @@ func (mediaManifest HlsMediaManifest) Parse() (HlsMediaManifestParseResult, erro
 			if urlMatch {
 				fragmentUrl = line
 			} else {
-				urlJoin, _ := url.JoinPath(mediaManifest.manifestUrl, line)
+				baseUrl, _ := utils.GetBaseUrl(mediaManifest.ManifestUrl)
+				urlJoin, _ := url.JoinPath(baseUrl, line)
 				fragmentUrl = urlJoin
 			}
 
@@ -103,7 +105,8 @@ func (mediaManifest HlsMediaManifest) Parse() (HlsMediaManifestParseResult, erro
 			if urlMatch {
 				initializationUrl = match[0]
 			} else {
-				urlJoin, _ := url.JoinPath(mediaManifest.manifestUrl, match[0])
+				baseUrl, _ := utils.GetBaseUrl(mediaManifest.ManifestUrl)
+				urlJoin, _ := url.JoinPath(baseUrl, line)
 				initializationUrl = urlJoin
 			}
 
