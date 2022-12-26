@@ -29,8 +29,8 @@ func getVideoUrls() []string {
 
 func main() {
 	streams := []*output.StreamDownloader{
-		output.CreateHlsStreamDownloader(getAudioUrls(), output.CreateNamedPipe()),
-		output.CreateHlsStreamDownloader(getVideoUrls(), output.CreateNamedPipe()),
+		output.CreateHlsStreamDownloader("http://localhost:8000/stream_3/stream_3.m3u8", output.CreateNamedPipe()),
+		output.CreateHlsStreamDownloader("http://localhost:8000/stream_0/stream_0.m3u8", output.CreateNamedPipe()),
 	}
 
 	// streamPlayer := output.CreateStreamPlayer()

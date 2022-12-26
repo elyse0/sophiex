@@ -21,10 +21,10 @@ type StreamDownloader struct {
 	Output     *StreamOutput
 }
 
-func CreateHlsStreamDownloader(urls []string, outputStream *StreamOutput) *StreamDownloader {
+func CreateHlsStreamDownloader(manifestUrl string, outputStream *StreamOutput) *StreamDownloader {
 	outputStream.Open()
 	return &StreamDownloader{
-		Downloader: downloader.CreateHlsDownloader(urls, outputStream.Stream),
+		Downloader: downloader.CreateHlsDownloader(manifestUrl, outputStream.Stream),
 		Output:     outputStream,
 	}
 }

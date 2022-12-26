@@ -39,9 +39,9 @@ func (fragment *HlsFragment) IsEmpty() bool {
 }
 
 type HlsMediaManifest struct {
-	manifest     string
-	manifestUrl  string
-	isLivestream bool
+	Manifest     string
+	ManifestUrl  string
+	IsLivestream bool
 }
 
 type HlsMediaManifestParseResult struct {
@@ -56,7 +56,7 @@ func (mediaManifest HlsMediaManifest) Parse() (HlsMediaManifestParseResult, erro
 	var programDateTime int64
 
 	// Some livestreams don't provide program date times, this way at least we can approximate it.
-	if mediaManifest.isLivestream {
+	if mediaManifest.IsLivestream {
 		programDateTime = time.Now().UnixMilli()
 	} else {
 		programDateTime = 0
@@ -66,7 +66,7 @@ func (mediaManifest HlsMediaManifest) Parse() (HlsMediaManifestParseResult, erro
 	discontinuity := 0
 	var duration int64 = 0
 
-	for _, line := range strings.Split(strings.TrimSuffix(mediaManifest.manifest, "\n"), "\n") {
+	for _, line := range strings.Split(strings.TrimSuffix(mediaManifest.Manifest, "\n"), "\n") {
 		line = strings.TrimSpace(line)
 
 		if !strings.HasPrefix(line, "#") {

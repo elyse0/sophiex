@@ -1,9 +1,11 @@
 package downloader
 
 import (
+	"io"
 	"os"
 	"sophiex/internal/downloader/fragment"
 	"sophiex/internal/logger"
+	"sophiex/internal/parser"
 	"sophiex/internal/utils"
 	"sync"
 )
@@ -16,11 +18,11 @@ type WorkerPool struct {
 
 var httpService = createHttpService()
 
-func (workerPool *WorkerPool) initialize(urls []string) {
-	for index, url := range urls {
+func (workerPool *WorkerPool) initialize(fragments []parser.HlsFragment) {
+	for index, _fragment := range fragments {
 		request := fragment.FragmentRequest{
 			Index: index,
-			Url:   url,
+			Url:   _fragment.Url,
 		}
 		workerPool.requests <- request
 	}
@@ -59,14 +61,25 @@ func (workerPool *WorkerPool) run(numberOfWorkers int) {
 }
 
 type HlsDownloader struct {
-	urls   []string
-	output *os.File
+	fragments []parser.HlsFragment
+	output    *os.File
 }
 
-func CreateHlsDownloader(urls []string, output *os.File) *HlsDownloader {
+func CreateHlsDownloader(manifestUrl string, output *os.File) *HlsDownloader {
+	response, _ := httpService.get(manifestUrl, HttpRequestConfig{})
+	manifest, _ := io.ReadAll(response.Body)
+
+	hlsMediaManifest := parser.HlsMediaManifest{
+		ManifestUrl:  manifestUrl,
+		Manifest:     string(manifest),
+		IsLivestream: false,
+	}
+
+	parsedManifest, _ := hlsMediaManifest.Parse()
+
 	return &HlsDownloader{
-		urls:   urls,
-		output: output,
+		fragments: parsedManifest.Fragments,
+		output:    output,
 	}
 }
 
@@ -76,10 +89,10 @@ func (downloader *HlsDownloader) Download(streamManager *sync.WaitGroup) {
 		responses: make(chan fragment.FragmentResponse, 10),
 	}
 
-	go workerPool.initialize(downloader.urls)
+	go workerPool.initialize(downloader.fragments)
 	go workerPool.run(4)
 
-	fragmentOrderedQueue := utils.CreateFragmentOrderedQueue(len(downloader.urls))
+	fragmentOrderedQueue := utils.CreateFragmentOrderedQueue(len(downloader.fragments))
 
 	for response := range workerPool.responses {
 		fragmentOrderedQueue.Enqueue(response)
