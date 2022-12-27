@@ -77,8 +77,7 @@ func (mediaManifest HlsMediaManifest) Parse() (HlsMediaManifestParseResult, erro
 				fragmentUrl = line
 			} else {
 				baseUrl, _ := utils.GetBaseUrl(mediaManifest.ManifestUrl)
-				urlJoin, _ := url.JoinPath(baseUrl, line)
-				fragmentUrl = urlJoin
+				fragmentUrl = baseUrl + line
 			}
 
 			fragmentStart := programDateTime
@@ -106,8 +105,7 @@ func (mediaManifest HlsMediaManifest) Parse() (HlsMediaManifestParseResult, erro
 				initializationUrl = match[0]
 			} else {
 				baseUrl, _ := utils.GetBaseUrl(mediaManifest.ManifestUrl)
-				urlJoin, _ := url.JoinPath(baseUrl, line)
-				initializationUrl = urlJoin
+				initializationUrl = baseUrl + line
 			}
 
 			initialization = HlsInitialization{
