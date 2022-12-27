@@ -33,7 +33,12 @@ func (workerPool *WorkerPool) worker() {
 	for request := range workerPool.requests {
 		logger.Log.Debug("Request url: %s\n", request.Url)
 		response, err := httpService.get(request.Url, HttpRequestConfig{
-			Headers: nil,
+			Headers: map[string]string{
+				"User-Agent":      "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:108.0) Gecko/20100101 Firefox/108.0",
+				"Accept":          "*/*",
+				"Accept-Encoding": "gzip, deflate, br",
+				"Connection":      "keep-alive",
+			},
 		})
 		logger.Log.Debug("Response url: %s\n", request.Url)
 		if err != nil {
@@ -66,7 +71,14 @@ type HlsDownloader struct {
 }
 
 func CreateHlsDownloader(manifestUrl string, output *os.File) *HlsDownloader {
-	response, _ := httpService.get(manifestUrl, HttpRequestConfig{})
+	response, _ := httpService.get(manifestUrl, HttpRequestConfig{
+		Headers: map[string]string{
+			"User-Agent":      "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:108.0) Gecko/20100101 Firefox/108.0",
+			"Accept":          "*/*",
+			"Accept-Encoding": "gzip, deflate, br",
+			"Connection":      "keep-alive",
+		},
+	})
 	manifest, _ := io.ReadAll(response.Body)
 
 	hlsMediaManifest := parser.HlsMediaManifest{
