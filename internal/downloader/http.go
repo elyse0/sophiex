@@ -11,10 +11,15 @@ type HttpService struct {
 }
 
 func createHttpService() *HttpService {
+	// proxyString := "http://localhost:8080"
+	// proxyUrl, _ := url.Parse(proxyString)
+
 	transport := &http.Transport{
 		MaxIdleConns:       10,
 		IdleConnTimeout:    30 * time.Second,
 		DisableCompression: true,
+		// Proxy:              http.ProxyURL(proxyUrl),
+		// TLSClientConfig:    &tls.Config{InsecureSkipVerify: true},
 	}
 	httpService := HttpService{
 		client: &http.Client{
