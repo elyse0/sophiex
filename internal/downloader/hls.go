@@ -1,10 +1,11 @@
 package downloader
 
 import (
+	"fmt"
 	"io"
-	"os"
 	"sophiex/internal/downloader/fragment"
 	"sophiex/internal/logger"
+	"sophiex/internal/output"
 	"sophiex/internal/parser"
 	"sophiex/internal/utils"
 	"sync"
@@ -16,7 +17,7 @@ type WorkerPool struct {
 	responses chan fragment.FragmentResponse
 }
 
-var httpService = createHttpService()
+var httpService = CreateHttpService()
 
 func (workerPool *WorkerPool) initialize(fragments []parser.HlsFragment) {
 	for index, _fragment := range fragments {
@@ -32,7 +33,7 @@ func (workerPool *WorkerPool) initialize(fragments []parser.HlsFragment) {
 func (workerPool *WorkerPool) worker() {
 	for request := range workerPool.requests {
 		logger.Log.Debug("Request url: %s\n", request.Url)
-		response, err := httpService.get(request.Url, HttpRequestConfig{
+		response, err := httpService.Get(request.Url, HttpRequestConfig{
 			Headers: map[string]string{
 				"User-Agent":      "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:108.0) Gecko/20100101 Firefox/108.0",
 				"Accept":          "*/*",
@@ -67,11 +68,11 @@ func (workerPool *WorkerPool) run(numberOfWorkers int) {
 
 type HlsDownloader struct {
 	fragments []parser.HlsFragment
-	output    *os.File
+	output    output.StreamWriter
 }
 
-func CreateHlsDownloader(manifestUrl string, output *os.File) *HlsDownloader {
-	response, _ := httpService.get(manifestUrl, HttpRequestConfig{
+func CreateHlsDownloader(manifestUrl string, stream output.StreamWriter) *HlsDownloader {
+	response, _ := httpService.Get(manifestUrl, HttpRequestConfig{
 		Headers: map[string]string{
 			"User-Agent":      "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:108.0) Gecko/20100101 Firefox/108.0",
 			"Accept":          "*/*",
@@ -91,7 +92,7 @@ func CreateHlsDownloader(manifestUrl string, output *os.File) *HlsDownloader {
 
 	return &HlsDownloader{
 		fragments: parsedManifest.Fragments,
-		output:    output,
+		output:    stream,
 	}
 }
 
@@ -111,7 +112,8 @@ func (downloader *HlsDownloader) Download(streamManager *sync.WaitGroup) {
 
 		dequeueFragments, hasFinished := fragmentOrderedQueue.Dequeue()
 		for _, dequeueFragment := range dequeueFragments {
-			downloader.output.ReadFrom(dequeueFragment.Response.Body)
+			io.Copy(downloader.output, dequeueFragment.Response.Body)
+			// downloader.output.PlayFrom(dequeueFragment.Response.Body)
 			dequeueFragment.Response.Body.Close()
 		}
 

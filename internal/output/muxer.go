@@ -7,23 +7,28 @@ import (
 	"sophiex/internal/logger"
 )
 
+type OsPath interface {
+	Path() string
+}
+
 func CreateMuxer() *FFmpegMuxer {
 	return &FFmpegMuxer{}
 }
 
 type FFmpegMuxer struct{}
 
-func (muxer *FFmpegMuxer) WriteTo(streams []*StreamDownloader, output io.Writer, done chan bool) {
+func (muxer *FFmpegMuxer) WriteTo(inputs []OsPath, output io.Writer, done chan bool) {
 	logger.Log.Debug("FfmpegMuxer: Writing to stdout")
 
 	args := []string{"-y"}
-	for _, stream := range streams {
-		args = append(args, "-i", stream.Output.Path)
+	for _, input := range inputs {
+		args = append(args, "-i", input.Path())
 	}
 	args = append(args, "-c:a", "aac", "-c:v", "copy", "-f", "matroska", "-")
 
 	command := exec.Command("ffmpeg", args...)
 	command.Stdout = output
+	command.Stderr = os.Stderr
 
 	go func() {
 		logger.Log.Debug("%v\n", command.Args)
@@ -37,14 +42,14 @@ func (muxer *FFmpegMuxer) WriteTo(streams []*StreamDownloader, output io.Writer,
 	}()
 }
 
-func (muxer *FFmpegMuxer) WriteToFile(streams []*StreamDownloader, outputPath string, done chan bool) {
+func (muxer *FFmpegMuxer) WriteToFile(inputs []OsPath, output OsPath, done chan bool) {
 	logger.Log.Debug("FfmpegMuxer: Writing to file")
 
 	args := []string{"-y"}
-	for _, stream := range streams {
-		args = append(args, "-i", stream.Output.Path)
+	for _, input := range inputs {
+		args = append(args, "-i", input.Path())
 	}
-	args = append(args, "-c", "copy", outputPath)
+	args = append(args, "-c:a", "copy", "-c:v", "copy", output.Path())
 
 	command := exec.Command("ffmpeg", args...)
 

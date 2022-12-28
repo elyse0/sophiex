@@ -10,7 +10,7 @@ type HttpService struct {
 	client *http.Client
 }
 
-func createHttpService() *HttpService {
+func CreateHttpService() *HttpService {
 	// proxyString := "http://localhost:8080"
 	// proxyUrl, _ := url.Parse(proxyString)
 
@@ -42,7 +42,7 @@ func addRequestHeaders(request *http.Request, headers map[string]string) *http.R
 	return request
 }
 
-func (httpService *HttpService) get(url string, config HttpRequestConfig) (*http.Response, error) {
+func (httpService *HttpService) Get(url string, config HttpRequestConfig) (*http.Response, error) {
 	request, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
 		panic(err)

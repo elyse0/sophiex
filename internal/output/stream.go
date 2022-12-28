@@ -2,13 +2,16 @@ package output
 
 import (
 	"os"
-	"sophiex/internal/downloader"
 	"sync"
 )
 
+type StreamWriter interface {
+	Write(data []byte) (n int, err error)
+}
+
 type StreamOutput struct {
-	Name   string
-	Path   string
+	name   string
+	path   string
 	Stream *os.File
 }
 
@@ -18,21 +21,9 @@ type Downloader interface {
 
 type StreamDownloader struct {
 	Downloader Downloader
-	Output     *StreamOutput
-}
-
-func CreateHlsStreamDownloader(manifestUrl string, outputStream *StreamOutput) *StreamDownloader {
-	outputStream.Open()
-	return &StreamDownloader{
-		Downloader: downloader.CreateHlsDownloader(manifestUrl, outputStream.Stream),
-		Output:     outputStream,
-	}
+	Output     StreamWriter
 }
 
 type StreamPlayer interface {
 	Launch(streams []*StreamDownloader, done chan bool)
-}
-
-type StreamWriter interface {
-	Launch(streams []*StreamDownloader, outputPath string, done chan bool)
 }

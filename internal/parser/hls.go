@@ -1,7 +1,7 @@
 package parser
 
 import (
-	"net/url"
+	"fmt"
 	"regexp"
 	"sophiex/internal/utils"
 	"strconv"
@@ -133,4 +133,25 @@ func (mediaManifest HlsMediaManifest) Parse() (HlsMediaManifestParseResult, erro
 		Initialization: initialization,
 		Fragments:      fragments,
 	}, nil
+}
+
+type HlsMasterManifest struct {
+	Manifest string
+}
+
+type HlsStream struct {
+	Bandwidth  int64
+	Resolution struct {
+		Height int64
+		Width  int64
+	}
+	Codecs string
+}
+
+func (masterManifest HlsMasterManifest) Parse() (string, error) {
+	for _, line := range strings.Split(strings.TrimSuffix(masterManifest.Manifest, "\n"), "\n") {
+		fmt.Println(line)
+	}
+
+	return "", nil
 }

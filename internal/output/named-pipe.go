@@ -19,14 +19,18 @@ func CreateNamedPipe() *StreamOutput {
 	}
 
 	return &StreamOutput{
-		Name:   name,
-		Path:   path,
+		name:   name,
+		path:   path,
 		Stream: nil,
 	}
 }
 
+func (namedPipe *StreamOutput) Path() string {
+	return namedPipe.path
+}
+
 func (namedPipe *StreamOutput) Open() {
-	stream, err := os.OpenFile(namedPipe.Path, os.O_RDWR|os.O_CREATE, 0640)
+	stream, err := os.OpenFile(namedPipe.path, os.O_RDWR|os.O_CREATE, 0640)
 	if err != nil {
 		panic("Couldn't open NamedPipe")
 	}
@@ -46,7 +50,7 @@ func (namedPipe *StreamOutput) Close() {
 		return
 	}
 
-	err = os.Remove(namedPipe.Path)
+	err = os.Remove(namedPipe.path)
 	if err != nil {
 		panic("Couldn't close NamedPipe")
 	}
