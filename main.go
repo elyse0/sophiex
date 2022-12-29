@@ -4,6 +4,7 @@ import (
 	"io"
 	"sophiex/internal/downloader"
 	"sophiex/internal/output"
+	"sophiex/internal/sites_extractor"
 	"sync"
 )
 
@@ -154,8 +155,22 @@ func main() {
 	// })
 
 	// DownloadSingleHttpUrlToPlayer("http://localhost:8000/test-audio.mp4")
-	DownloadMultipleHttpUrlsToPlayer([]string{
-		"http://localhost:8000/test-audio.mp4",
-		"http://localhost:8000/test-video.mp4",
-	})
+	// DownloadMultipleHttpUrlsToPlayer([]string{
+	// 	"http://localhost:8000/test-audio.mp4",
+	// 	"http://localhost:8000/test-video.mp4",
+	// })
+	downloadableFormats := sites_extractor.GetDownloadableFormats(
+		"https://www.youtube.com/watch?v=dQcHxnIeS5w")
+
+	if len(downloadableFormats) == 1 {
+		DownloadSingleHttpUrlToPlayer(downloadableFormats[0].Url)
+	} else {
+		var urls []string
+		for _, format := range downloadableFormats {
+			urls = append(urls, format.Url)
+		}
+
+		DownloadMultipleHttpUrlsToPlayer(urls)
+	}
+
 }
