@@ -3,6 +3,7 @@ package main
 import (
 	"io"
 	"sophiex/internal/downloader"
+	"sophiex/internal/downloader/http"
 	"sophiex/internal/output"
 	"sophiex/internal/sites_extractor"
 	"sync"
@@ -47,7 +48,7 @@ func DownloadSingleHttpUrlToPlayer(url string) {
 }
 
 func DownloadMultipleHttpUrlsToPlayer(urls []string) {
-	var httpService = downloader.CreateHttpService()
+	var httpService = http.CreateHttpService()
 
 	downloadManager := &sync.WaitGroup{}
 
@@ -61,7 +62,7 @@ func DownloadMultipleHttpUrlsToPlayer(urls []string) {
 		downloadManager.Add(1)
 		_url := url
 		go func() {
-			response, _ := httpService.Get(_url, downloader.HttpRequestConfig{
+			response, _ := httpService.Get(_url, http.HttpRequestConfig{
 				Headers: map[string]string{
 					"User-Agent":      "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:108.0) Gecko/20100101 Firefox/108.0",
 					"Accept":          "*/*",
@@ -139,6 +140,63 @@ func DownloadMultipleHlsUrlsToPlayer(urls []string) {
 	}
 
 	<-muxerDone
+	<-playerDone
+}
+
+func DownloadMultipleHttpUrlsUsingMultipartToPlayer() {
+	downloadableFormats := sites_extractor.GetDownloadableFormats(
+		"https://www.youtube.com/watch?v=SHO3dE-IDWk")
+
+	var urls []string
+	for _, format := range downloadableFormats {
+		if format.Protocol != sites_extractor.Http {
+			panic(format)
+		}
+
+		urls = append(urls, format.Url)
+	}
+
+	downloadManager := &sync.WaitGroup{}
+	httpService := http.CreateHttpService()
+
+	var namedPipes []*output.StreamOutput
+	for _, url := range urls {
+		namedPipe := output.CreateNamedPipe()
+		namedPipe.Open()
+
+		namedPipes = append(namedPipes, namedPipe)
+
+		downloadManager.Add(1)
+
+		_url := url
+		go func() {
+			_, _ = httpService.GetMultiFragment(
+				// "http://localhost:8080/skam-france.mp4",
+				_url,
+				http.HttpRequestConfig{},
+				namedPipe.Stream,
+				downloadManager,
+			)
+		}()
+	}
+
+	pipeReader, pipeWriter := io.Pipe()
+
+	var inputs []output.OsPath
+	for _, namedPipe := range namedPipes {
+		inputs = append(inputs, namedPipe)
+	}
+
+	muxerDone := make(chan bool)
+	muxer := output.CreateMuxer()
+	muxer.WriteTo(inputs, pipeWriter, muxerDone)
+
+	playerDone := make(chan bool)
+	player := output.CreateStreamPlayer()
+	player.PlayFrom(pipeReader, playerDone)
+
+	downloadManager.Wait()
+
 	<-playerDone
 }
 
