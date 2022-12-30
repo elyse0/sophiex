@@ -1,16 +1,16 @@
 package utils
 
 import (
-	"sophiex/internal/downloader/fragment"
+	"net/http"
 	"testing"
 )
 
 func TestSimpleFragmentOrderedQueue(t *testing.T) {
-	fragmentOrderedQueue := CreateFragmentOrderedQueue(3)
+	fragmentOrderedQueue := CreateFragmentOrderedQueue[*http.Response](3)
 
-	fragmentOrderedQueue.Enqueue(fragment.FragmentResponse{
-		Index:    0,
-		Response: nil,
+	fragmentOrderedQueue.Enqueue(OrderedFragment[*http.Response]{
+		Index:   0,
+		Payload: nil,
 	})
 
 	fragments, hasFinished := fragmentOrderedQueue.Dequeue()
@@ -21,9 +21,9 @@ func TestSimpleFragmentOrderedQueue(t *testing.T) {
 		t.Errorf("Fragment dequeue should not have finished")
 	}
 
-	fragmentOrderedQueue.Enqueue(fragment.FragmentResponse{
-		Index:    2,
-		Response: nil,
+	fragmentOrderedQueue.Enqueue(OrderedFragment[*http.Response]{
+		Index:   2,
+		Payload: nil,
 	})
 
 	fragments, hasFinished = fragmentOrderedQueue.Dequeue()
@@ -34,9 +34,9 @@ func TestSimpleFragmentOrderedQueue(t *testing.T) {
 		t.Errorf("Fragment dequeue should not have finished")
 	}
 
-	fragmentOrderedQueue.Enqueue(fragment.FragmentResponse{
-		Index:    1,
-		Response: nil,
+	fragmentOrderedQueue.Enqueue(OrderedFragment[*http.Response]{
+		Index:   1,
+		Payload: nil,
 	})
 
 	fragments, hasFinished = fragmentOrderedQueue.Dequeue()

@@ -3,7 +3,9 @@ package downloader
 import (
 	"fmt"
 	"io"
+	"net/http"
 	"sophiex/internal/downloader/fragment"
+	sophiexHttp "sophiex/internal/downloader/http"
 	"sophiex/internal/logger"
 	"sophiex/internal/output"
 	"sophiex/internal/parser"
@@ -14,10 +16,10 @@ import (
 type WorkerPool struct {
 	manager   sync.WaitGroup
 	requests  chan fragment.FragmentRequest
-	responses chan fragment.FragmentResponse
+	responses chan utils.OrderedFragment[*http.Response]
 }
 
-var httpService = CreateHttpService()
+var httpService = sophiexHttp.CreateHttpService()
 
 func (workerPool *WorkerPool) initialize(fragments []parser.HlsFragment) {
 	for index, _fragment := range fragments {
@@ -33,7 +35,7 @@ func (workerPool *WorkerPool) initialize(fragments []parser.HlsFragment) {
 func (workerPool *WorkerPool) worker() {
 	for request := range workerPool.requests {
 		logger.Log.Debug("Request url: %s\n", request.Url)
-		response, err := httpService.Get(request.Url, HttpRequestConfig{
+		response, err := httpService.Get(request.Url, sophiexHttp.HttpRequestConfig{
 			Headers: map[string]string{
 				"User-Agent":      "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:108.0) Gecko/20100101 Firefox/108.0",
 				"Accept":          "*/*",
@@ -46,9 +48,9 @@ func (workerPool *WorkerPool) worker() {
 			panic("Http error")
 		}
 
-		fragmentResponse := fragment.FragmentResponse{
-			Index:    request.Index,
-			Response: response,
+		fragmentResponse := utils.OrderedFragment[*http.Response]{
+			Index:   request.Index,
+			Payload: response,
 		}
 
 		workerPool.responses <- fragmentResponse
@@ -72,7 +74,7 @@ type HlsDownloader struct {
 }
 
 func CreateHlsDownloader(manifestUrl string, stream output.StreamWriter) *HlsDownloader {
-	response, _ := httpService.Get(manifestUrl, HttpRequestConfig{
+	response, _ := httpService.Get(manifestUrl, sophiexHttp.HttpRequestConfig{
 		Headers: map[string]string{
 			"User-Agent":      "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:108.0) Gecko/20100101 Firefox/108.0",
 			"Accept":          "*/*",
@@ -90,6 +92,8 @@ func CreateHlsDownloader(manifestUrl string, stream output.StreamWriter) *HlsDow
 
 	parsedManifest, _ := hlsMediaManifest.Parse()
 
+	fmt.Println(parsedManifest.Fragments)
+
 	return &HlsDownloader{
 		fragments: parsedManifest.Fragments,
 		output:    stream,
@@ -99,22 +103,22 @@ func CreateHlsDownloader(manifestUrl string, stream output.StreamWriter) *HlsDow
 func (downloader *HlsDownloader) Download(streamManager *sync.WaitGroup) {
 	var workerPool = WorkerPool{
 		requests:  make(chan fragment.FragmentRequest, 10),
-		responses: make(chan fragment.FragmentResponse, 10),
+		responses: make(chan utils.OrderedFragment[*http.Response], 10),
 	}
 
 	go workerPool.initialize(downloader.fragments)
 	go workerPool.run(4)
 
-	fragmentOrderedQueue := utils.CreateFragmentOrderedQueue(len(downloader.fragments))
+	fragmentOrderedQueue := utils.CreateFragmentOrderedQueue[*http.Response](len(downloader.fragments))
 
 	for response := range workerPool.responses {
 		fragmentOrderedQueue.Enqueue(response)
 
 		dequeueFragments, hasFinished := fragmentOrderedQueue.Dequeue()
 		for _, dequeueFragment := range dequeueFragments {
-			io.Copy(downloader.output, dequeueFragment.Response.Body)
+			io.Copy(downloader.output, dequeueFragment.Payload.Body)
 			// downloader.output.PlayFrom(dequeueFragment.Response.Body)
-			dequeueFragment.Response.Body.Close()
+			dequeueFragment.Payload.Body.Close()
 		}
 
 		if hasFinished {

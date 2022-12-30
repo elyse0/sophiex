@@ -1,25 +1,29 @@
 package utils
 
 import (
-	"sophiex/internal/downloader/fragment"
 	"sort"
 )
 
-type FragmentOrderedQueue struct {
-	itemsNumber int
-	current     int
-	items       []fragment.FragmentResponse
+type OrderedFragment[T any] struct {
+	Index   int
+	Payload T
 }
 
-func CreateFragmentOrderedQueue(itemsNumber int) *FragmentOrderedQueue {
-	return &FragmentOrderedQueue{
+type FragmentOrderedQueue[T any] struct {
+	itemsNumber int
+	current     int
+	items       []OrderedFragment[T]
+}
+
+func CreateFragmentOrderedQueue[T any](itemsNumber int) *FragmentOrderedQueue[T] {
+	return &FragmentOrderedQueue[T]{
 		itemsNumber: itemsNumber,
 		current:     0,
-		items:       []fragment.FragmentResponse{},
+		items:       []OrderedFragment[T]{},
 	}
 }
 
-func (slice *FragmentOrderedQueue) Enqueue(item fragment.FragmentResponse) {
+func (slice *FragmentOrderedQueue[T]) Enqueue(item OrderedFragment[T]) {
 	slice.items = append(slice.items, item)
 
 	sort.Slice(slice.items, func(i, j int) bool {
@@ -27,13 +31,13 @@ func (slice *FragmentOrderedQueue) Enqueue(item fragment.FragmentResponse) {
 	})
 }
 
-func (slice *FragmentOrderedQueue) Dequeue() ([]fragment.FragmentResponse, bool) {
+func (slice *FragmentOrderedQueue[T]) Dequeue() ([]OrderedFragment[T], bool) {
 	if len(slice.items) == 0 {
-		return []fragment.FragmentResponse{}, false
+		return []OrderedFragment[T]{}, false
 	}
 
 	if slice.items[0].Index != slice.current {
-		return []fragment.FragmentResponse{}, false
+		return []OrderedFragment[T]{}, false
 	}
 
 	cutIndex := 1
