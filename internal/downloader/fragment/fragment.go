@@ -1,6 +1,8 @@
 package fragment
 
+import "sophiex/internal/parser"
+
 type FragmentRequest struct {
-	Index int
-	Url   string
+	Index    int
+	Fragment parser.HlsFragment
 }
