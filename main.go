@@ -19,13 +19,10 @@ func DownloadSingleHlsUrlToPlayer(url string) {
 
 	go hlsDownloader.Download(downloadManager)
 
-	playerDone := make(chan bool)
 	player := output.CreateStreamPlayer()
-	player.PlayFrom(pipeReader, playerDone)
+	player.PlayFrom(pipeReader)
 
 	downloadManager.Wait()
-
-	<-playerDone
 }
 
 func DownloadSingleHttpUrlToPlayer(url string) {
@@ -40,11 +37,8 @@ func DownloadSingleHttpUrlToPlayer(url string) {
 		},
 	})
 
-	playerDone := make(chan bool)
 	player := output.CreateStreamPlayer()
-	player.PlayFrom(response.Body, playerDone)
-
-	<-playerDone
+	player.PlayFrom(response.Body)
 }
 
 func DownloadMultipleHttpUrlsToPlayer(urls []string) {
@@ -89,9 +83,8 @@ func DownloadMultipleHttpUrlsToPlayer(urls []string) {
 	muxer := output.CreateMuxer()
 	muxer.WriteTo(inputs, pipeWriter, muxerDone)
 
-	playerDone := make(chan bool)
 	player := output.CreateStreamPlayer()
-	player.PlayFrom(pipeReader, playerDone)
+	player.PlayFrom(pipeReader)
 
 	downloadManager.Wait()
 
@@ -100,7 +93,6 @@ func DownloadMultipleHttpUrlsToPlayer(urls []string) {
 	}
 
 	<-muxerDone
-	<-playerDone
 }
 
 func DownloadMultipleHlsUrlsToPlayer(urls []string) {
@@ -129,9 +121,8 @@ func DownloadMultipleHlsUrlsToPlayer(urls []string) {
 	muxer := output.CreateMuxer()
 	muxer.WriteTo(inputs, pipeWriter, muxerDone)
 
-	playerDone := make(chan bool)
 	player := output.CreateStreamPlayer()
-	player.PlayFrom(pipeReader, playerDone)
+	player.PlayFrom(pipeReader)
 
 	downloadManager.Wait()
 
@@ -140,7 +131,6 @@ func DownloadMultipleHlsUrlsToPlayer(urls []string) {
 	}
 
 	<-muxerDone
-	<-playerDone
 }
 
 func DownloadMultipleHttpUrlsUsingMultipartToPlayer() {
@@ -191,13 +181,10 @@ func DownloadMultipleHttpUrlsUsingMultipartToPlayer() {
 	muxer := output.CreateMuxer()
 	muxer.WriteTo(inputs, pipeWriter, muxerDone)
 
-	playerDone := make(chan bool)
 	player := output.CreateStreamPlayer()
-	player.PlayFrom(pipeReader, playerDone)
+	player.PlayFrom(pipeReader)
 
 	downloadManager.Wait()
-
-	<-playerDone
 }
 
 func DownloadFormat(format sites_extractor.DownloadableFormat, output io.Writer, downloadManager *sync.WaitGroup) {
@@ -233,13 +220,10 @@ func DownloadSingleFormatToPlayer(format sites_extractor.DownloadableFormat) {
 
 	DownloadFormat(format, pipeWriter, downloadManager)
 
-	playerDone := make(chan bool)
 	player := output.CreateStreamPlayer()
-	player.PlayFrom(pipeReader, playerDone)
+	player.PlayFrom(pipeReader)
 
 	downloadManager.Wait()
-
-	<-playerDone
 }
 
 func DownloadMultipleFormatsToPlayer(formats []sites_extractor.DownloadableFormat) {
@@ -265,9 +249,8 @@ func DownloadMultipleFormatsToPlayer(formats []sites_extractor.DownloadableForma
 	muxer := output.CreateMuxer()
 	muxer.WriteTo(inputs, pipeWriter, muxerDone)
 
-	playerDone := make(chan bool)
 	player := output.CreateStreamPlayer()
-	player.PlayFrom(pipeReader, playerDone)
+	player.PlayFrom(pipeReader)
 
 	downloadManager.Wait()
 
@@ -276,7 +259,6 @@ func DownloadMultipleFormatsToPlayer(formats []sites_extractor.DownloadableForma
 	}
 
 	<-muxerDone
-	<-playerDone
 }
 
 func DownloadFormatsToPlayer(formats []sites_extractor.DownloadableFormat) {

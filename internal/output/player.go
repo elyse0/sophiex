@@ -16,7 +16,7 @@ func CreateStreamPlayer() *MpvPlayer {
 	}
 }
 
-func (player *MpvPlayer) PlayFrom(input io.Reader, done chan bool) {
+func (player *MpvPlayer) PlayFrom(input io.Reader) {
 	playerCommand := exec.Command(player.bin, "-", "--player-operation-mode=pseudo-gui")
 	playerCommand.Stdin = input
 
@@ -25,7 +25,6 @@ func (player *MpvPlayer) PlayFrom(input io.Reader, done chan bool) {
 		if err != nil {
 			panic(err)
 		}
-		close(done)
 	}()
 }
 
