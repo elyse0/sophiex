@@ -19,6 +19,9 @@ type InfoDict struct {
 	Id               string                    `json:"id"`
 	Title            string                    `json:"title"`
 	RequestedFormats []ytDlpDownloadableFormat `json:"requested_formats"`
+	Url              string                    `json:"url"`
+	FormatId         string                    `json:"format_id"`
+	Protocol         string                    `json:"protocol"`
 }
 
 func getProtocol(protocol string) DownloadProtocol {
@@ -48,6 +51,16 @@ func GetDownloadableFormats(url string) []DownloadableFormat {
 	err = json.Unmarshal(ytDlpOutput, &infoDict)
 	if err != nil {
 		panic(err)
+	}
+
+	if infoDict.Url != "" {
+		return []DownloadableFormat{
+			{
+				Id:       infoDict.FormatId,
+				Url:      infoDict.Url,
+				Protocol: getProtocol(infoDict.Protocol),
+			},
+		}
 	}
 
 	var downloadableFormats []DownloadableFormat
