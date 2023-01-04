@@ -28,7 +28,7 @@ func getProtocol(protocol string) DownloadProtocol {
 	if protocol == "https" {
 		return Http
 	}
-	if protocol == "m3u8" {
+	if protocol == "m3u8" || protocol == "m3u8_native" {
 		return Hls
 	}
 
