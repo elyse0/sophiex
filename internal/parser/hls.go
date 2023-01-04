@@ -13,6 +13,20 @@ type HlsInitialization struct {
 	Url string `json:"url"`
 }
 
+type HlsDecryption struct {
+	Method string `json:"method"`
+	Uri    string `json:"uri"`
+	IV     []byte `json:"iv"`
+}
+
+func (decryption *HlsDecryption) IsEmpty() bool {
+	if decryption.Uri == "" {
+		return true
+	}
+
+	return false
+}
+
 func (initialization *HlsInitialization) IsEmpty() bool {
 	if initialization.Url == "" {
 		return true
@@ -22,12 +36,13 @@ func (initialization *HlsInitialization) IsEmpty() bool {
 }
 
 type HlsFragment struct {
-	MediaSequence int    `json:"mediaSequence"`
-	Discontinuity int    `json:"discontinuity"`
-	Url           string `json:"url"`
-	Duration      int64  `json:"duration"` // Milliseconds
-	Start         int64  `json:"start"`    // Unix milliseconds
-	End           int64  `json:"end"`      // Unix milliseconds
+	MediaSequence int           `json:"mediaSequence"`
+	Discontinuity int           `json:"discontinuity"`
+	Url           string        `json:"url"`
+	Duration      int64         `json:"duration"`   // Milliseconds
+	Decryption    HlsDecryption `json:"decryption"` // Milliseconds
+	Start         int64         `json:"start"`      // Unix milliseconds
+	End           int64         `json:"end"`        // Unix milliseconds
 }
 
 func (fragment *HlsFragment) IsEmpty() bool {
@@ -65,6 +80,7 @@ func (mediaManifest HlsMediaManifest) Parse() (HlsMediaManifestParseResult, erro
 	mediaSequence := 0
 	discontinuity := 0
 	var duration int64 = 0
+	decryption := HlsDecryption{}
 
 	for _, line := range strings.Split(strings.TrimSuffix(mediaManifest.Manifest, "\n"), "\n") {
 		line = strings.TrimSpace(line)
@@ -89,6 +105,7 @@ func (mediaManifest HlsMediaManifest) Parse() (HlsMediaManifestParseResult, erro
 				Discontinuity: discontinuity,
 				Url:           fragmentUrl,
 				Duration:      duration,
+				Decryption:    decryption,
 				Start:         fragmentStart,
 				End:           fragmentEnd,
 			})
@@ -126,6 +143,22 @@ func (mediaManifest HlsMediaManifest) Parse() (HlsMediaManifestParseResult, erro
 			match := re.FindStringSubmatch(line)
 			tt, _ := time.Parse(time.RFC3339, match[1])
 			programDateTime = tt.UnixMilli()
+		} else if strings.HasPrefix(line, "#EXT-X-KEY") {
+			re := regexp.MustCompile(`#EXT-X-KEY\s*:\s*METHOD\s*=\s*NONE`)
+			match := re.FindStringSubmatch(line)
+			if len(match) != 0 {
+				decryption = HlsDecryption{}
+				continue
+			}
+
+			re = regexp.MustCompile(`#EXT-X-KEY\s*:\s*METHOD\s*=\s*AES-128\s*,URI\s*=\s*"([^"]+)`)
+			match = re.FindStringSubmatch(line)
+			if len(match) != 0 {
+				decryption = HlsDecryption{
+					Method: "AES-128",
+					Uri:    match[1],
+				}
+			}
 		}
 	}
 
