@@ -16,6 +16,11 @@ var Log = &Logger{
 }
 
 func (logger *Logger) Debug(format string, a ...any) {
-	text := fmt.Sprintf(format, a)
+	var text string
+	if len(a) == 0 {
+		text = fmt.Sprintf(format)
+	} else {
+		text = fmt.Sprintf(format, a)
+	}
 	logger.l.Printf(color.InCyan(text))
 }
