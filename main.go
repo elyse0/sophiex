@@ -35,7 +35,7 @@ func DownloadFormat(format sites_extractor.DownloadableFormat, output io.WriteCl
 	}
 }
 
-func DownloadSingleFormatToPlayer(format sites_extractor.DownloadableFormat, manager *sync.WaitGroup) io.Reader {
+func DownloadSingleFormat(format sites_extractor.DownloadableFormat, manager *sync.WaitGroup) io.Reader {
 	pipeReader, pipeWriter := io.Pipe()
 
 	DownloadFormat(format, pipeWriter, manager)
@@ -43,7 +43,7 @@ func DownloadSingleFormatToPlayer(format sites_extractor.DownloadableFormat, man
 	return pipeReader
 }
 
-func DownloadMultipleFormatsToPlayer(formats []sites_extractor.DownloadableFormat, downloadManager *sync.WaitGroup) io.Reader {
+func DownloadMultipleFormats(formats []sites_extractor.DownloadableFormat, downloadManager *sync.WaitGroup) io.Reader {
 	var namedPipes []*output.StreamOutput
 	for _, format := range formats {
 		namedPipe := output.CreateNamedPipe()
@@ -66,11 +66,11 @@ func DownloadMultipleFormatsToPlayer(formats []sites_extractor.DownloadableForma
 	return pipeReader
 }
 
-func DownloadFormatsToPlayer(formats []sites_extractor.DownloadableFormat, manager *sync.WaitGroup) io.Reader {
+func DownloadFormats(formats []sites_extractor.DownloadableFormat, manager *sync.WaitGroup) io.Reader {
 	if len(formats) == 1 {
-		return DownloadSingleFormatToPlayer(formats[0], manager)
+		return DownloadSingleFormat(formats[0], manager)
 	} else {
-		return DownloadMultipleFormatsToPlayer(formats, manager)
+		return DownloadMultipleFormats(formats, manager)
 	}
 }
 
@@ -80,7 +80,7 @@ func main() {
 	downloadableFormats := sites_extractor.GetDownloadableFormats(
 		"http://localhost:8080/master.m3u8")
 
-	pipeReader := DownloadFormatsToPlayer(downloadableFormats, &manager)
+	pipeReader := DownloadFormats(downloadableFormats, &manager)
 
 	// outputFile, _ := os.Create("skam-test.mkv")
 	// io.Copy(outputFile, pipeReader)
