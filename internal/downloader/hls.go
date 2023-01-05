@@ -41,13 +41,19 @@ func (workerPool *WorkerPool) initialize(fragments []parser.HlsFragment) {
 func (workerPool *WorkerPool) worker() {
 	for request := range workerPool.requests {
 		logger.Log.Debug("Request url: %s\n", request.Fragment.Url)
+		headers := map[string]string{
+			"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:108.0) Gecko/20100101 Firefox/108.0",
+		}
+
+		if !request.Fragment.ByteRange.IsEmpty() {
+			headers["Range"] = fmt.Sprintf(
+				"bytes=%d-%d",
+				request.Fragment.ByteRange.Start+1,
+				request.Fragment.ByteRange.End)
+		}
+
 		response, err := httpService.Get(request.Fragment.Url, sophiexHttp.HttpRequestConfig{
-			Headers: map[string]string{
-				"User-Agent":      "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:108.0) Gecko/20100101 Firefox/108.0",
-				"Accept":          "*/*",
-				"Accept-Encoding": "gzip, deflate, br",
-				"Connection":      "keep-alive",
-			},
+			Headers: headers,
 		})
 		logger.Log.Debug("Response url: %s\n", request.Fragment.Url)
 		if err != nil {
@@ -78,8 +84,9 @@ func (workerPool *WorkerPool) run(numberOfWorkers int) {
 }
 
 type HlsDownloader struct {
-	fragments []parser.HlsFragment
-	output    output.StreamWriter
+	initialization parser.HlsInitialization
+	fragments      []parser.HlsFragment
+	output         output.StreamWriter
 }
 
 func CreateHlsDownloader(manifestUrl string, stream output.StreamWriter) *HlsDownloader {
@@ -101,8 +108,9 @@ func CreateHlsDownloader(manifestUrl string, stream output.StreamWriter) *HlsDow
 	fmt.Println(parsedManifest.Fragments)
 
 	return &HlsDownloader{
-		fragments: parsedManifest.Fragments,
-		output:    stream,
+		initialization: parsedManifest.Initialization,
+		fragments:      parsedManifest.Fragments,
+		output:         stream,
 	}
 }
 
@@ -117,6 +125,27 @@ func (downloader *HlsDownloader) Download(streamManager *sync.WaitGroup) {
 
 	fragmentOrderedQueue := utils.CreateFragmentOrderedQueue[FragmentResponse](len(downloader.fragments))
 
+	headers := map[string]string{
+		"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:108.0) Gecko/20100101 Firefox/108.0",
+	}
+
+	if !downloader.initialization.IsEmpty() {
+		if !downloader.initialization.ByteRange.IsEmpty() {
+			headers["Range"] = fmt.Sprintf(
+				"bytes=%d-%d",
+				downloader.initialization.ByteRange.Start,
+				downloader.initialization.ByteRange.End)
+		}
+
+		initializationResponse, _ := httpService.Get(
+			downloader.initialization.Url,
+			sophiexHttp.HttpRequestConfig{
+				Headers: headers,
+			})
+		initialization, _ := io.ReadAll(initializationResponse.Body)
+		downloader.output.Write(initialization)
+	}
+
 	for response := range workerPool.responses {
 		fragmentOrderedQueue.Enqueue(response)
 
@@ -128,7 +157,9 @@ func (downloader *HlsDownloader) Download(streamManager *sync.WaitGroup) {
 			_fragment.Payload.Response.Body.Close()
 
 			if !_fragment.Payload.Fragment.Decryption.IsEmpty() {
-				keyResponse, _ := httpService.Get(_fragment.Payload.Fragment.Decryption.Uri, sophiexHttp.HttpRequestConfig{})
+				keyResponse, _ := httpService.Get(
+					_fragment.Payload.Fragment.Decryption.Uri,
+					sophiexHttp.HttpRequestConfig{})
 				key, _ := io.ReadAll(keyResponse.Body)
 
 				fragmentContent, _ = crypto.AesDecrypt(
