@@ -36,7 +36,7 @@ func getProtocol(protocol string) DownloadProtocol {
 }
 
 func GetDownloadableFormats(url string) []DownloadableFormat {
-	ytDlp := exec.Command("yt-dlp", url, "--skip-download", "--print-json")
+	ytDlp := exec.Command("yt-dlp", url, "--skip-download", "-S", "proto", "--print-json")
 	logger.Log.Debug("%v", ytDlp.Args)
 
 	ytDlp.Stderr = os.Stderr
