@@ -180,5 +180,6 @@ func (downloader *HlsDownloader) Download(streamManager *sync.WaitGroup) {
 		}
 	}
 
+	downloader.output.Close()
 	streamManager.Done()
 }

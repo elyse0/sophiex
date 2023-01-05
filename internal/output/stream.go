@@ -7,6 +7,7 @@ import (
 
 type StreamWriter interface {
 	Write(data []byte) (n int, err error)
+	Close() error
 }
 
 type StreamOutput struct {

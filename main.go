@@ -9,7 +9,7 @@ import (
 	"sync"
 )
 
-func DownloadFormat(format sites_extractor.DownloadableFormat, output io.Writer, downloadManager *sync.WaitGroup) {
+func DownloadFormat(format sites_extractor.DownloadableFormat, output io.WriteCloser, downloadManager *sync.WaitGroup) {
 	httpService := http.CreateHttpService()
 
 	downloadManager.Add(1)
@@ -35,22 +35,15 @@ func DownloadFormat(format sites_extractor.DownloadableFormat, output io.Writer,
 	}
 }
 
-func DownloadSingleFormatToPlayer(format sites_extractor.DownloadableFormat) {
-	downloadManager := &sync.WaitGroup{}
-
+func DownloadSingleFormatToPlayer(format sites_extractor.DownloadableFormat, manager *sync.WaitGroup) io.Reader {
 	pipeReader, pipeWriter := io.Pipe()
 
-	DownloadFormat(format, pipeWriter, downloadManager)
+	DownloadFormat(format, pipeWriter, manager)
 
-	player := output.CreateStreamPlayer()
-	player.PlayFrom(pipeReader)
-
-	downloadManager.Wait()
+	return pipeReader
 }
 
-func DownloadMultipleFormatsToPlayer(formats []sites_extractor.DownloadableFormat) {
-	downloadManager := &sync.WaitGroup{}
-
+func DownloadMultipleFormatsToPlayer(formats []sites_extractor.DownloadableFormat, downloadManager *sync.WaitGroup) io.Reader {
 	var namedPipes []*output.StreamOutput
 	for _, format := range formats {
 		namedPipe := output.CreateNamedPipe()
@@ -67,33 +60,33 @@ func DownloadMultipleFormatsToPlayer(formats []sites_extractor.DownloadableForma
 		inputs = append(inputs, namedPipe)
 	}
 
-	muxerDone := make(chan bool)
 	muxer := output.CreateMuxer()
-	muxer.WriteTo(inputs, pipeWriter, muxerDone)
+	muxer.WriteTo(inputs, pipeWriter, downloadManager)
 
-	player := output.CreateStreamPlayer()
-	player.PlayFrom(pipeReader)
-
-	downloadManager.Wait()
-
-	for _, namedPipe := range namedPipes {
-		namedPipe.Close()
-	}
-
-	<-muxerDone
+	return pipeReader
 }
 
-func DownloadFormatsToPlayer(formats []sites_extractor.DownloadableFormat) {
+func DownloadFormatsToPlayer(formats []sites_extractor.DownloadableFormat, manager *sync.WaitGroup) io.Reader {
 	if len(formats) == 1 {
-		DownloadSingleFormatToPlayer(formats[0])
+		return DownloadSingleFormatToPlayer(formats[0], manager)
 	} else {
-		DownloadMultipleFormatsToPlayer(formats)
+		return DownloadMultipleFormatsToPlayer(formats, manager)
 	}
 }
 
 func main() {
+	manager := sync.WaitGroup{}
+
 	downloadableFormats := sites_extractor.GetDownloadableFormats(
 		"http://localhost:8080/master.m3u8")
 
-	DownloadFormatsToPlayer(downloadableFormats)
+	pipeReader := DownloadFormatsToPlayer(downloadableFormats, &manager)
+
+	// outputFile, _ := os.Create("skam-test.mkv")
+	// io.Copy(outputFile, pipeReader)
+
+	player := output.CreateStreamPlayer()
+	player.PlayFrom(pipeReader)
+
+	manager.Wait()
 }

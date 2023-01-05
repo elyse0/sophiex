@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"os/exec"
+	"sync"
 )
 
 type MpvPlayer struct {
@@ -28,7 +29,7 @@ func (player *MpvPlayer) PlayFrom(input io.Reader) {
 	}()
 }
 
-func (player *MpvPlayer) Launch(streams []*StreamDownloader, done chan bool) {
+func (player *MpvPlayer) Launch(streams []*StreamDownloader, manager *sync.WaitGroup) {
 	var playerCommand *exec.Cmd
 	if len(streams) == 1 {
 		// playerCommand = exec.Command(player.bin, streams[0].Output.Path)
@@ -41,7 +42,7 @@ func (player *MpvPlayer) Launch(streams []*StreamDownloader, done chan bool) {
 			}
 		}()
 
-		close(done)
+		manager.Done()
 		return
 	}
 
@@ -50,7 +51,7 @@ func (player *MpvPlayer) Launch(streams []*StreamDownloader, done chan bool) {
 
 	muxer := CreateMuxer()
 	// FIXME
-	muxer.WriteTo(nil, playerStdin, done)
+	muxer.WriteTo(nil, playerStdin, manager)
 
 	go func() {
 		err := playerCommand.Run()

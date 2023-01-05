@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/exec"
 	"sophiex/internal/logger"
+	"sync"
 )
 
 type OsPath interface {
@@ -17,8 +18,9 @@ func CreateMuxer() *FFmpegMuxer {
 
 type FFmpegMuxer struct{}
 
-func (muxer *FFmpegMuxer) WriteTo(inputs []OsPath, output io.Writer, done chan bool) {
+func (muxer *FFmpegMuxer) WriteTo(inputs []OsPath, output io.WriteCloser, manager *sync.WaitGroup) {
 	logger.Log.Debug("FfmpegMuxer: Writing to stdout")
+	manager.Add(1)
 
 	args := []string{"-y"}
 	for _, input := range inputs {
@@ -38,7 +40,8 @@ func (muxer *FFmpegMuxer) WriteTo(inputs []OsPath, output io.Writer, done chan b
 			panic(err)
 		}
 
-		close(done)
+		output.Close()
+		manager.Done()
 	}()
 }
 
