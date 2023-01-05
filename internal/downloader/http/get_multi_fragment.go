@@ -161,6 +161,7 @@ func (httpService *HttpService) GetMultiFragment(
 	}
 
 	streamManager.Done()
+	output.Close()
 
 	return response, nil
 }
