@@ -108,8 +108,14 @@ func (mediaManifest HlsMediaManifest) Parse() (HlsMediaManifestParseResult, erro
 			if urlMatch {
 				fragmentUrl = line
 			} else {
-				baseUrl, _ := utils.GetBaseUrl(mediaManifest.ManifestUrl)
-				fragmentUrl = baseUrl + line
+				if strings.HasPrefix(line, "/") {
+					re := regexp.MustCompile("https?://[^/]+")
+					match := re.FindStringSubmatch(mediaManifest.ManifestUrl)
+					fragmentUrl = match[0] + line
+				} else {
+					baseUrl, _ := utils.GetBaseUrl(mediaManifest.ManifestUrl)
+					fragmentUrl = baseUrl + line
+				}
 			}
 
 			fragmentStart := programDateTime
