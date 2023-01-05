@@ -25,7 +25,7 @@ type InfoDict struct {
 }
 
 func getProtocol(protocol string) DownloadProtocol {
-	if protocol == "https" {
+	if protocol == "https" || protocol == "http" {
 		return Http
 	}
 	if protocol == "m3u8" || protocol == "m3u8_native" {
