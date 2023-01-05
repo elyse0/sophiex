@@ -92,11 +92,9 @@ func (httpService *HttpService) GetMultiFragment(
 	}
 
 	addRequestHeaders(request, config.Headers)
-	fmt.Println(request)
 
 	response, err := httpService.client.Do(request)
 	if err != nil {
-		fmt.Println(response)
 		return nil, err
 	}
 	response.Body.Close()
