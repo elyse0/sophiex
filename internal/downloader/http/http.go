@@ -45,7 +45,7 @@ func addRequestHeaders(request *http.Request, headers map[string]string) *http.R
 func (httpService *Service) Get(url string, config RequestConfig) (*http.Response, error) {
 	request, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
 	addRequestHeaders(request, config.Headers)
