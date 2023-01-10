@@ -46,8 +46,16 @@ func DownloadSingleFormat(format sites_extractor.DownloadableFormat, manager *sy
 func DownloadMultipleFormats(formats []sites_extractor.DownloadableFormat, downloadManager *sync.WaitGroup) io.Reader {
 	var namedPipes []*output.StreamOutput
 	for _, format := range formats {
-		namedPipe := output.CreateNamedPipe()
-		namedPipe.Open()
+		namedPipe, err := output.CreateNamedPipe()
+		if err != nil {
+			panic(err)
+		}
+
+		err = namedPipe.Open()
+		if err != nil {
+			panic(err)
+		}
+
 		namedPipes = append(namedPipes, namedPipe)
 
 		DownloadFormat(format, namedPipe.Stream, downloadManager)
