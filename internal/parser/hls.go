@@ -3,6 +3,7 @@ package parser
 import (
 	"fmt"
 	"regexp"
+	"sophiex/internal/fragment"
 	"sophiex/internal/utils"
 	"strconv"
 	"strings"
@@ -10,8 +11,8 @@ import (
 )
 
 type HlsInitialization struct {
-	Url       string       `json:"url"`
-	ByteRange HlsByteRange `json:"byteRange"`
+	Url       string             `json:"url"`
+	ByteRange fragment.ByteRange `json:"byteRange"`
 }
 
 type HlsDecryption struct {
@@ -20,21 +21,8 @@ type HlsDecryption struct {
 	IV     []byte `json:"iv"`
 }
 
-type HlsByteRange struct {
-	Start int `json:"start"`
-	End   int `json:"end"`
-}
-
 func (decryption *HlsDecryption) IsEmpty() bool {
 	if decryption.Uri == "" {
-		return true
-	}
-
-	return false
-}
-
-func (byteRange *HlsByteRange) IsEmpty() bool {
-	if byteRange.Start == 0 && byteRange.End == 0 {
 		return true
 	}
 
@@ -50,14 +38,14 @@ func (initialization *HlsInitialization) IsEmpty() bool {
 }
 
 type HlsFragment struct {
-	MediaSequence int           `json:"mediaSequence"`
-	Discontinuity int           `json:"discontinuity"`
-	Url           string        `json:"url"`
-	Duration      int64         `json:"duration"`   // Milliseconds
-	Decryption    HlsDecryption `json:"decryption"` // Milliseconds
-	ByteRange     HlsByteRange  `json:"byteRange"`
-	Start         int64         `json:"start"` // Unix milliseconds
-	End           int64         `json:"end"`   // Unix milliseconds
+	MediaSequence int                `json:"mediaSequence"`
+	Discontinuity int                `json:"discontinuity"`
+	Url           string             `json:"url"`
+	Duration      int64              `json:"duration"`   // Milliseconds
+	Decryption    HlsDecryption      `json:"decryption"` // Milliseconds
+	ByteRange     fragment.ByteRange `json:"byteRange"`
+	Start         int64              `json:"start"` // Unix milliseconds
+	End           int64              `json:"end"`   // Unix milliseconds
 }
 
 func (fragment *HlsFragment) IsEmpty() bool {
@@ -96,7 +84,7 @@ func (mediaManifest HlsMediaManifest) Parse() (HlsMediaManifestParseResult, erro
 	discontinuity := 0
 	var duration int64 = 0
 	decryption := HlsDecryption{}
-	byteRange := HlsByteRange{}
+	byteRange := fragment.ByteRange{}
 
 	for _, line := range strings.Split(strings.TrimSuffix(mediaManifest.Manifest, "\n"), "\n") {
 		line = strings.TrimSpace(line)
@@ -147,12 +135,12 @@ func (mediaManifest HlsMediaManifest) Parse() (HlsMediaManifestParseResult, erro
 				initializationUrl = baseUrl + match[1]
 			}
 
-			byteRange := HlsByteRange{}
+			byteRange := fragment.ByteRange{}
 			if len(match) > 2 {
 				length, _ := strconv.Atoi(match[2])
 				start, _ := strconv.Atoi(match[3])
 
-				byteRange = HlsByteRange{
+				byteRange = fragment.ByteRange{
 					Start: start,
 					End:   start + length,
 				}
@@ -168,7 +156,7 @@ func (mediaManifest HlsMediaManifest) Parse() (HlsMediaManifestParseResult, erro
 			match := re.FindStringSubmatch(line)
 			durationFloat, _ := strconv.ParseFloat(match[1], 64)
 			duration = int64(durationFloat * 1000)
-			byteRange = HlsByteRange{}
+			byteRange = fragment.ByteRange{}
 		} else if strings.HasPrefix(line, "#EXT-X-MEDIA-SEQUENCE") {
 			re := regexp.MustCompile(`#EXT-X-MEDIA-SEQUENCE\s*:\s*(\d+)`)
 			match := re.FindStringSubmatch(line)
@@ -200,7 +188,7 @@ func (mediaManifest HlsMediaManifest) Parse() (HlsMediaManifestParseResult, erro
 			length, _ := strconv.Atoi(match[1])
 			start, _ := strconv.Atoi(match[2])
 
-			byteRange = HlsByteRange{
+			byteRange = fragment.ByteRange{
 				Start: start,
 				End:   start + length,
 			}
