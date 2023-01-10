@@ -77,8 +77,10 @@ func DownloadFormats(formats []sites_extractor.DownloadableFormat, manager *sync
 func main() {
 	manager := sync.WaitGroup{}
 
-	downloadableFormats := sites_extractor.GetDownloadableFormats(
-		"http://localhost:8080/master.m3u8")
+	downloadableFormats, err := sites_extractor.GetDownloadableFormats(os.Args[1])
+	if err != nil {
+		panic(err)
+	}
 
 	pipeReader := DownloadFormats(downloadableFormats, &manager)
 

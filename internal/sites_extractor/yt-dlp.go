@@ -2,7 +2,6 @@ package sites_extractor
 
 import (
 	"encoding/json"
-	"fmt"
 	"os"
 	"os/exec"
 	"sophiex/internal/logger"
@@ -35,7 +34,7 @@ func getProtocol(protocol string) DownloadProtocol {
 	panic(protocol)
 }
 
-func GetDownloadableFormats(url string) []DownloadableFormat {
+func GetDownloadableFormats(url string) ([]DownloadableFormat, error) {
 	ytDlp := exec.Command("yt-dlp", url, "--skip-download", "-S", "proto", "--print-json")
 	logger.Log.Debug("%v", ytDlp.Args)
 
@@ -43,14 +42,13 @@ func GetDownloadableFormats(url string) []DownloadableFormat {
 
 	ytDlpOutput, err := ytDlp.Output()
 	if err != nil {
-		fmt.Println(err)
-		panic(err)
+		return nil, err
 	}
 
 	var infoDict InfoDict
 	err = json.Unmarshal(ytDlpOutput, &infoDict)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
 	if infoDict.Url != "" {
@@ -60,7 +58,7 @@ func GetDownloadableFormats(url string) []DownloadableFormat {
 				Url:      infoDict.Url,
 				Protocol: getProtocol(infoDict.Protocol),
 			},
-		}
+		}, nil
 	}
 
 	var downloadableFormats []DownloadableFormat
@@ -73,5 +71,5 @@ func GetDownloadableFormats(url string) []DownloadableFormat {
 		})
 	}
 
-	return downloadableFormats
+	return downloadableFormats, nil
 }
