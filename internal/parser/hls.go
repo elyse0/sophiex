@@ -15,20 +15,6 @@ type HlsInitialization struct {
 	ByteRange fragment.ByteRange `json:"byteRange"`
 }
 
-type HlsDecryption struct {
-	Method string `json:"method"`
-	Uri    string `json:"uri"`
-	IV     []byte `json:"iv"`
-}
-
-func (decryption *HlsDecryption) IsEmpty() bool {
-	if decryption.Uri == "" {
-		return true
-	}
-
-	return false
-}
-
 func (initialization *HlsInitialization) IsEmpty() bool {
 	if initialization.Url == "" {
 		return true
@@ -38,14 +24,14 @@ func (initialization *HlsInitialization) IsEmpty() bool {
 }
 
 type HlsFragment struct {
-	MediaSequence int                `json:"mediaSequence"`
-	Discontinuity int                `json:"discontinuity"`
-	Url           string             `json:"url"`
-	Duration      int64              `json:"duration"`   // Milliseconds
-	Decryption    HlsDecryption      `json:"decryption"` // Milliseconds
-	ByteRange     fragment.ByteRange `json:"byteRange"`
-	Start         int64              `json:"start"` // Unix milliseconds
-	End           int64              `json:"end"`   // Unix milliseconds
+	MediaSequence int                 `json:"mediaSequence"`
+	Discontinuity int                 `json:"discontinuity"`
+	Url           string              `json:"url"`
+	Duration      int64               `json:"duration"`   // Milliseconds
+	Decryption    fragment.Decryption `json:"decryption"` // Milliseconds
+	ByteRange     fragment.ByteRange  `json:"byteRange"`
+	Start         int64               `json:"start"` // Unix milliseconds
+	End           int64               `json:"end"`   // Unix milliseconds
 }
 
 func (fragment *HlsFragment) IsEmpty() bool {
@@ -83,7 +69,7 @@ func (mediaManifest HlsMediaManifest) Parse() (HlsMediaManifestParseResult, erro
 	mediaSequence := 0
 	discontinuity := 0
 	var duration int64 = 0
-	decryption := HlsDecryption{}
+	decryption := fragment.Decryption{}
 	byteRange := fragment.ByteRange{}
 
 	for _, line := range strings.Split(strings.TrimSuffix(mediaManifest.Manifest, "\n"), "\n") {
@@ -170,14 +156,14 @@ func (mediaManifest HlsMediaManifest) Parse() (HlsMediaManifestParseResult, erro
 			re := regexp.MustCompile(`#EXT-X-KEY\s*:\s*METHOD\s*=\s*NONE`)
 			match := re.FindStringSubmatch(line)
 			if len(match) != 0 {
-				decryption = HlsDecryption{}
+				decryption = fragment.Decryption{}
 				continue
 			}
 
 			re = regexp.MustCompile(`#EXT-X-KEY\s*:\s*METHOD\s*=\s*AES-128\s*,URI\s*=\s*"([^"]+)`)
 			match = re.FindStringSubmatch(line)
 			if len(match) != 0 {
-				decryption = HlsDecryption{
+				decryption = fragment.Decryption{
 					Method: "AES-128",
 					Uri:    match[1],
 				}

@@ -13,7 +13,22 @@ func (byteRange *ByteRange) IsEmpty() bool {
 	return false
 }
 
+type Decryption struct {
+	Method string `json:"method"`
+	Uri    string `json:"uri"`
+	IV     []byte `json:"iv"`
+}
+
+func (decryption *Decryption) IsEmpty() bool {
+	if decryption.Uri == "" {
+		return true
+	}
+
+	return false
+}
+
 type Fragment interface {
 	Url() string
 	ByteRange() ByteRange
+	Decryption() Decryption
 }
