@@ -20,7 +20,7 @@ func DownloadFormat(format sites_extractor.DownloadableFormat, output io.WriteCl
 		go func() {
 			_, _ = httpService.GetMultiFragment(
 				_url,
-				http.HttpRequestConfig{},
+				http.RequestConfig{},
 				output,
 				downloadManager,
 			)

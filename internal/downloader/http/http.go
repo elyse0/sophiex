@@ -6,11 +6,11 @@ import (
 	"time"
 )
 
-type HttpService struct {
+type Service struct {
 	client *http.Client
 }
 
-func CreateHttpService() *HttpService {
+func CreateService() *Service {
 	// proxyString := "http://localhost:8080"
 	// proxyUrl, _ := url.Parse(proxyString)
 
@@ -21,7 +21,7 @@ func CreateHttpService() *HttpService {
 		// Proxy:              http.ProxyURL(proxyUrl),
 		// TLSClientConfig:    &tls.Config{InsecureSkipVerify: true},
 	}
-	httpService := HttpService{
+	httpService := Service{
 		client: &http.Client{
 			Transport: transport,
 		},
@@ -30,7 +30,7 @@ func CreateHttpService() *HttpService {
 	return &httpService
 }
 
-type HttpRequestConfig struct {
+type RequestConfig struct {
 	Headers map[string]string
 }
 
@@ -42,7 +42,7 @@ func addRequestHeaders(request *http.Request, headers map[string]string) *http.R
 	return request
 }
 
-func (httpService *HttpService) Get(url string, config HttpRequestConfig) (*http.Response, error) {
+func (httpService *Service) Get(url string, config RequestConfig) (*http.Response, error) {
 	request, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
 		panic(err)

@@ -29,7 +29,7 @@ type WorkerPool struct {
 	responses chan utils.OrderedFragment[Response]
 }
 
-var httpService = sophiexHttp.CreateHttpService()
+var httpService = sophiexHttp.CreateService()
 
 func (workerPool *WorkerPool) initialize(fragments []parser.HlsFragment) {
 	for index, _fragment := range fragments {
@@ -56,7 +56,7 @@ func (workerPool *WorkerPool) worker() {
 				request.Fragment.ByteRange.End)
 		}
 
-		response, err := httpService.Get(request.Fragment.Url, sophiexHttp.HttpRequestConfig{
+		response, err := httpService.Get(request.Fragment.Url, sophiexHttp.RequestConfig{
 			Headers: headers,
 		})
 		logger.Log.Debug("Response url: %s\n", request.Fragment.Url)
@@ -94,7 +94,7 @@ type HlsDownloader struct {
 }
 
 func CreateHlsDownloader(manifestUrl string, stream output.StreamWriter) *HlsDownloader {
-	response, _ := httpService.Get(manifestUrl, sophiexHttp.HttpRequestConfig{
+	response, _ := httpService.Get(manifestUrl, sophiexHttp.RequestConfig{
 		Headers: map[string]string{
 			"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:108.0) Gecko/20100101 Firefox/108.0",
 		},
@@ -143,7 +143,7 @@ func (downloader *HlsDownloader) Download(streamManager *sync.WaitGroup) {
 
 		initializationResponse, _ := httpService.Get(
 			downloader.initialization.Url,
-			sophiexHttp.HttpRequestConfig{
+			sophiexHttp.RequestConfig{
 				Headers: headers,
 			})
 		initialization, _ := io.ReadAll(initializationResponse.Body)
@@ -163,7 +163,7 @@ func (downloader *HlsDownloader) Download(streamManager *sync.WaitGroup) {
 			if !_fragment.Payload.Fragment.Decryption.IsEmpty() {
 				keyResponse, _ := httpService.Get(
 					_fragment.Payload.Fragment.Decryption.Uri,
-					sophiexHttp.HttpRequestConfig{})
+					sophiexHttp.RequestConfig{})
 				key, _ := io.ReadAll(keyResponse.Body)
 
 				fragmentContent, _ = crypto.AesDecrypt(

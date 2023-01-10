@@ -29,7 +29,7 @@ type WorkerPool struct {
 	responses chan utils.OrderedFragment[*http.Response]
 }
 
-var httpService = CreateHttpService()
+var httpService = CreateService()
 
 func (workerPool *WorkerPool) initialize(url string, ranges []Range) {
 	for index, _range := range ranges {
@@ -46,7 +46,7 @@ func (workerPool *WorkerPool) initialize(url string, ranges []Range) {
 func (workerPool *WorkerPool) worker() {
 	for request := range workerPool.requests {
 		logger.Log.Debug("Request url: %s\n", request.Url)
-		response, err := httpService.Get(request.Url, HttpRequestConfig{
+		response, err := httpService.Get(request.Url, RequestConfig{
 			Headers: map[string]string{
 				"User-Agent":      "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:108.0) Gecko/20100101 Firefox/108.0",
 				"Accept":          "*/*",
@@ -80,9 +80,9 @@ func (workerPool *WorkerPool) run(numberOfWorkers int) {
 	close(workerPool.responses)
 }
 
-func (httpService *HttpService) GetMultiFragment(
+func (httpService *Service) GetMultiFragment(
 	url string,
-	config HttpRequestConfig,
+	config RequestConfig,
 	output output.StreamWriter,
 	streamManager *sync.WaitGroup,
 ) (*http.Response, error) {
