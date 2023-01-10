@@ -10,7 +10,7 @@ import (
 )
 
 func DownloadFormat(format sites_extractor.DownloadableFormat, output io.WriteCloser, downloadManager *sync.WaitGroup) {
-	httpService := http.CreateHttpService()
+	httpService := http.CreateService()
 
 	downloadManager.Add(1)
 
