@@ -5,7 +5,6 @@ import (
 	"io"
 	"net/http"
 	"sophiex/internal/crypto"
-	"sophiex/internal/downloader/fragment"
 	sophiexHttp "sophiex/internal/downloader/http"
 	"sophiex/internal/logger"
 	"sophiex/internal/output"
@@ -14,6 +13,11 @@ import (
 	"sync"
 )
 
+type Request struct {
+	Index    int
+	Fragment parser.HlsFragment
+}
+
 type FragmentResponse struct {
 	Fragment parser.HlsFragment
 	Response *http.Response
@@ -21,7 +25,7 @@ type FragmentResponse struct {
 
 type WorkerPool struct {
 	manager   sync.WaitGroup
-	requests  chan fragment.FragmentRequest
+	requests  chan Request
 	responses chan utils.OrderedFragment[FragmentResponse]
 }
 
@@ -29,7 +33,7 @@ var httpService = sophiexHttp.CreateHttpService()
 
 func (workerPool *WorkerPool) initialize(fragments []parser.HlsFragment) {
 	for index, _fragment := range fragments {
-		request := fragment.FragmentRequest{
+		request := Request{
 			Index:    index,
 			Fragment: _fragment,
 		}
@@ -105,7 +109,7 @@ func CreateHlsDownloader(manifestUrl string, stream output.StreamWriter) *HlsDow
 
 	parsedManifest, _ := hlsMediaManifest.Parse()
 
-	fmt.Println(parsedManifest.Fragments)
+	// fmt.Println(parsedManifest.Fragments)
 
 	return &HlsDownloader{
 		initialization: parsedManifest.Initialization,
@@ -116,7 +120,7 @@ func CreateHlsDownloader(manifestUrl string, stream output.StreamWriter) *HlsDow
 
 func (downloader *HlsDownloader) Download(streamManager *sync.WaitGroup) {
 	var workerPool = WorkerPool{
-		requests:  make(chan fragment.FragmentRequest, 10),
+		requests:  make(chan Request, 10),
 		responses: make(chan utils.OrderedFragment[FragmentResponse], 10),
 	}
 
