@@ -1,29 +1,29 @@
-package utils
+package ordered_queue
 
 import (
 	"sort"
 )
 
-type OrderedFragment[T any] struct {
+type OrderedItem[T any] struct {
 	Index   int
 	Payload T
 }
 
-type FragmentOrderedQueue[T any] struct {
+type OrderedQueue[T any] struct {
 	itemsNumber int
 	current     int
-	items       []OrderedFragment[T]
+	items       []OrderedItem[T]
 }
 
-func CreateFragmentOrderedQueue[T any](itemsNumber int) *FragmentOrderedQueue[T] {
-	return &FragmentOrderedQueue[T]{
+func CreateOrderedQueue[T any](itemsNumber int) *OrderedQueue[T] {
+	return &OrderedQueue[T]{
 		itemsNumber: itemsNumber,
 		current:     0,
-		items:       []OrderedFragment[T]{},
+		items:       []OrderedItem[T]{},
 	}
 }
 
-func (slice *FragmentOrderedQueue[T]) Enqueue(item OrderedFragment[T]) {
+func (slice *OrderedQueue[T]) Enqueue(item OrderedItem[T]) {
 	slice.items = append(slice.items, item)
 
 	sort.Slice(slice.items, func(i, j int) bool {
@@ -31,13 +31,13 @@ func (slice *FragmentOrderedQueue[T]) Enqueue(item OrderedFragment[T]) {
 	})
 }
 
-func (slice *FragmentOrderedQueue[T]) Dequeue() ([]OrderedFragment[T], bool) {
+func (slice *OrderedQueue[T]) Dequeue() ([]OrderedItem[T], bool) {
 	if len(slice.items) == 0 {
-		return []OrderedFragment[T]{}, false
+		return []OrderedItem[T]{}, false
 	}
 
 	if slice.items[0].Index != slice.current {
-		return []OrderedFragment[T]{}, false
+		return []OrderedItem[T]{}, false
 	}
 
 	cutIndex := 1

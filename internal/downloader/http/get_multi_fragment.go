@@ -6,8 +6,8 @@ import (
 	"io"
 	"net/http"
 	"sophiex/internal/logger"
+	"sophiex/internal/ordered-queue"
 	"sophiex/internal/output"
-	"sophiex/internal/utils"
 	"strconv"
 	"sync"
 )
@@ -26,7 +26,7 @@ type RangeRequest struct {
 type WorkerPool struct {
 	manager   sync.WaitGroup
 	requests  chan RangeRequest
-	responses chan utils.OrderedFragment[*http.Response]
+	responses chan ordered_queue.OrderedItem[*http.Response]
 }
 
 var httpService = CreateService()
@@ -60,7 +60,7 @@ func (workerPool *WorkerPool) worker() {
 			panic("Http error")
 		}
 
-		rangeResponse := utils.OrderedFragment[*http.Response]{
+		rangeResponse := ordered_queue.OrderedItem[*http.Response]{
 			Index:   request.Index,
 			Payload: response,
 		}
@@ -137,13 +137,13 @@ func (httpService *Service) GetMultiFragment(
 
 	var workerPool = WorkerPool{
 		requests:  make(chan RangeRequest, 10),
-		responses: make(chan utils.OrderedFragment[*http.Response], 10),
+		responses: make(chan ordered_queue.OrderedItem[*http.Response], 10),
 	}
 
 	go workerPool.initialize(url, ranges)
 	go workerPool.run(4)
 
-	fragmentOrderedQueue := utils.CreateFragmentOrderedQueue[*http.Response](len(ranges))
+	fragmentOrderedQueue := ordered_queue.CreateOrderedQueue[*http.Response](len(ranges))
 
 	for response := range workerPool.responses {
 		fragmentOrderedQueue.Enqueue(response)

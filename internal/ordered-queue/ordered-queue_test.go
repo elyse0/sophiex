@@ -1,14 +1,14 @@
-package utils
+package ordered_queue
 
 import (
 	"net/http"
 	"testing"
 )
 
-func TestSimpleFragmentOrderedQueue(t *testing.T) {
-	fragmentOrderedQueue := CreateFragmentOrderedQueue[*http.Response](3)
+func TestSimpleOrderedQueue(t *testing.T) {
+	fragmentOrderedQueue := CreateOrderedQueue[*http.Response](3)
 
-	fragmentOrderedQueue.Enqueue(OrderedFragment[*http.Response]{
+	fragmentOrderedQueue.Enqueue(OrderedItem[*http.Response]{
 		Index:   0,
 		Payload: nil,
 	})
@@ -21,7 +21,7 @@ func TestSimpleFragmentOrderedQueue(t *testing.T) {
 		t.Errorf("Fragment dequeue should not have finished")
 	}
 
-	fragmentOrderedQueue.Enqueue(OrderedFragment[*http.Response]{
+	fragmentOrderedQueue.Enqueue(OrderedItem[*http.Response]{
 		Index:   2,
 		Payload: nil,
 	})
@@ -34,7 +34,7 @@ func TestSimpleFragmentOrderedQueue(t *testing.T) {
 		t.Errorf("Fragment dequeue should not have finished")
 	}
 
-	fragmentOrderedQueue.Enqueue(OrderedFragment[*http.Response]{
+	fragmentOrderedQueue.Enqueue(OrderedItem[*http.Response]{
 		Index:   1,
 		Payload: nil,
 	})
