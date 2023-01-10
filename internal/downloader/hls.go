@@ -18,7 +18,7 @@ type Request struct {
 	Fragment parser.HlsFragment
 }
 
-type FragmentResponse struct {
+type Response struct {
 	Fragment parser.HlsFragment
 	Response *http.Response
 }
@@ -26,7 +26,7 @@ type FragmentResponse struct {
 type WorkerPool struct {
 	manager   sync.WaitGroup
 	requests  chan Request
-	responses chan utils.OrderedFragment[FragmentResponse]
+	responses chan utils.OrderedFragment[Response]
 }
 
 var httpService = sophiexHttp.CreateHttpService()
@@ -64,9 +64,9 @@ func (workerPool *WorkerPool) worker() {
 			panic("Http error")
 		}
 
-		fragmentResponse := utils.OrderedFragment[FragmentResponse]{
+		fragmentResponse := utils.OrderedFragment[Response]{
 			Index: request.Index,
-			Payload: FragmentResponse{
+			Payload: Response{
 				Fragment: request.Fragment,
 				Response: response,
 			},
@@ -121,13 +121,13 @@ func CreateHlsDownloader(manifestUrl string, stream output.StreamWriter) *HlsDow
 func (downloader *HlsDownloader) Download(streamManager *sync.WaitGroup) {
 	var workerPool = WorkerPool{
 		requests:  make(chan Request, 10),
-		responses: make(chan utils.OrderedFragment[FragmentResponse], 10),
+		responses: make(chan utils.OrderedFragment[Response], 10),
 	}
 
 	go workerPool.initialize(downloader.fragments)
 	go workerPool.run(4)
 
-	fragmentOrderedQueue := utils.CreateFragmentOrderedQueue[FragmentResponse](len(downloader.fragments))
+	fragmentOrderedQueue := utils.CreateFragmentOrderedQueue[Response](len(downloader.fragments))
 
 	headers := map[string]string{
 		"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:108.0) Gecko/20100101 Firefox/108.0",
