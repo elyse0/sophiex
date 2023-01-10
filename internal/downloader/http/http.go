@@ -6,6 +6,8 @@ import (
 	"time"
 )
 
+var HttpService = CreateService()
+
 type Service struct {
 	client *http.Client
 }
