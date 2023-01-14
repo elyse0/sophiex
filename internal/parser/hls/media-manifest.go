@@ -1,7 +1,6 @@
-package parser
+package hls
 
 import (
-	"fmt"
 	"regexp"
 	"sophiex/internal/fragment"
 	"sophiex/internal/utils"
@@ -10,52 +9,20 @@ import (
 	"time"
 )
 
-type HlsInitialization struct {
-	Url       string             `json:"url"`
-	ByteRange fragment.ByteRange `json:"byteRange"`
-}
-
-func (initialization *HlsInitialization) IsEmpty() bool {
-	if initialization.Url == "" {
-		return true
-	}
-
-	return false
-}
-
-type HlsFragment struct {
-	MediaSequence int                 `json:"mediaSequence"`
-	Discontinuity int                 `json:"discontinuity"`
-	Url           string              `json:"url"`
-	Duration      int64               `json:"duration"`   // Milliseconds
-	Decryption    fragment.Decryption `json:"decryption"` // Milliseconds
-	ByteRange     fragment.ByteRange  `json:"byteRange"`
-	Start         int64               `json:"start"` // Unix milliseconds
-	End           int64               `json:"end"`   // Unix milliseconds
-}
-
-func (fragment *HlsFragment) IsEmpty() bool {
-	if fragment.Url == "" {
-		return true
-	}
-
-	return false
-}
-
-type HlsMediaManifest struct {
+type MediaManifest struct {
 	Manifest     string
 	ManifestUrl  string
 	IsLivestream bool
 }
 
-type HlsMediaManifestParseResult struct {
-	Initialization HlsInitialization
-	Fragments      []HlsFragment
+type MediaManifestParseResult struct {
+	Initialization Initialization
+	Fragments      []Fragment
 }
 
-func (mediaManifest HlsMediaManifest) Parse() (HlsMediaManifestParseResult, error) {
-	var initialization HlsInitialization
-	var fragments []HlsFragment
+func (mediaManifest MediaManifest) Parse() (MediaManifestParseResult, error) {
+	var initialization Initialization
+	var fragments []Fragment
 
 	var programDateTime int64
 
@@ -96,13 +63,15 @@ func (mediaManifest HlsMediaManifest) Parse() (HlsMediaManifestParseResult, erro
 			fragmentEnd := programDateTime + duration
 			programDateTime += duration
 
-			fragments = append(fragments, HlsFragment{
+			fragments = append(fragments, Fragment{
+				Generic: fragment.Generic{
+					Url:        fragmentUrl,
+					ByteRange:  byteRange,
+					Decryption: decryption,
+				},
 				MediaSequence: mediaSequence,
 				Discontinuity: discontinuity,
-				Url:           fragmentUrl,
 				Duration:      duration,
-				Decryption:    decryption,
-				ByteRange:     byteRange,
 				Start:         fragmentStart,
 				End:           fragmentEnd,
 			})
@@ -121,7 +90,6 @@ func (mediaManifest HlsMediaManifest) Parse() (HlsMediaManifestParseResult, erro
 				initializationUrl = baseUrl + match[1]
 			}
 
-			byteRange := fragment.ByteRange{}
 			if len(match) > 2 {
 				length, _ := strconv.Atoi(match[2])
 				start, _ := strconv.Atoi(match[3])
@@ -132,11 +100,10 @@ func (mediaManifest HlsMediaManifest) Parse() (HlsMediaManifestParseResult, erro
 				}
 			}
 
-			initialization = HlsInitialization{
+			initialization = Initialization{
 				Url:       initializationUrl,
 				ByteRange: byteRange,
 			}
-
 		} else if strings.HasPrefix(line, "#EXTINF") {
 			re := regexp.MustCompile(`#EXTINF\s*:\s*([\d+.]+)`)
 			match := re.FindStringSubmatch(line)
@@ -181,29 +148,8 @@ func (mediaManifest HlsMediaManifest) Parse() (HlsMediaManifestParseResult, erro
 		}
 	}
 
-	return HlsMediaManifestParseResult{
+	return MediaManifestParseResult{
 		Initialization: initialization,
 		Fragments:      fragments,
 	}, nil
-}
-
-type HlsMasterManifest struct {
-	Manifest string
-}
-
-type HlsStream struct {
-	Bandwidth  int64
-	Resolution struct {
-		Height int64
-		Width  int64
-	}
-	Codecs string
-}
-
-func (masterManifest HlsMasterManifest) Parse() (string, error) {
-	for _, line := range strings.Split(strings.TrimSuffix(masterManifest.Manifest, "\n"), "\n") {
-		fmt.Println(line)
-	}
-
-	return "", nil
 }

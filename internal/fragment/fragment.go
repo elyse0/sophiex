@@ -27,8 +27,16 @@ func (decryption *Decryption) IsEmpty() bool {
 	return false
 }
 
-type Fragment interface {
-	Url() string
-	ByteRange() ByteRange
-	Decryption() Decryption
+type Generic struct {
+	Url        string
+	ByteRange  ByteRange
+	Decryption Decryption
+}
+
+func (generic *Generic) IsEmpty() bool {
+	if generic.Url == "" {
+		return true
+	}
+
+	return false
 }

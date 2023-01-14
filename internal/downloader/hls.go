@@ -3,91 +3,19 @@ package downloader
 import (
 	"fmt"
 	"io"
-	"net/http"
 	"sophiex/internal/crypto"
+	"sophiex/internal/downloader/fragment"
 	sophiexHttp "sophiex/internal/downloader/http"
-	"sophiex/internal/logger"
+	fragment2 "sophiex/internal/fragment"
 	"sophiex/internal/ordered-queue"
 	"sophiex/internal/output"
-	"sophiex/internal/parser"
+	"sophiex/internal/parser/hls"
 	"sync"
 )
 
-type Request struct {
-	Index    int
-	Fragment parser.HlsFragment
-}
-
-type Response struct {
-	Fragment parser.HlsFragment
-	Response *http.Response
-}
-
-type WorkerPool struct {
-	manager   sync.WaitGroup
-	requests  chan Request
-	responses chan ordered_queue.OrderedItem[Response]
-}
-
-func (workerPool *WorkerPool) initialize(fragments []parser.HlsFragment) {
-	for index, _fragment := range fragments {
-		request := Request{
-			Index:    index,
-			Fragment: _fragment,
-		}
-		workerPool.requests <- request
-	}
-	close(workerPool.requests)
-}
-
-func (workerPool *WorkerPool) worker() {
-	for request := range workerPool.requests {
-		logger.Log.Debug("Request url: %s\n", request.Fragment.Url)
-		headers := map[string]string{
-			"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:108.0) Gecko/20100101 Firefox/108.0",
-		}
-
-		if !request.Fragment.ByteRange.IsEmpty() {
-			headers["Range"] = fmt.Sprintf(
-				"bytes=%d-%d",
-				request.Fragment.ByteRange.Start+1,
-				request.Fragment.ByteRange.End)
-		}
-
-		response, err := sophiexHttp.HttpService.Get(request.Fragment.Url, sophiexHttp.RequestConfig{
-			Headers: headers,
-		})
-		logger.Log.Debug("Response url: %s\n", request.Fragment.Url)
-		if err != nil {
-			panic("Http error")
-		}
-
-		fragmentResponse := ordered_queue.OrderedItem[Response]{
-			Index: request.Index,
-			Payload: Response{
-				Fragment: request.Fragment,
-				Response: response,
-			},
-		}
-
-		workerPool.responses <- fragmentResponse
-	}
-	workerPool.manager.Done()
-}
-
-func (workerPool *WorkerPool) run(numberOfWorkers int) {
-	for i := 0; i < numberOfWorkers; i++ {
-		logger.Log.Debug("Creating worker no. %d\n", i)
-		workerPool.manager.Add(1)
-		go workerPool.worker()
-	}
-	workerPool.manager.Wait()
-	close(workerPool.responses)
-}
-
 type HlsDownloader struct {
-	initialization parser.HlsInitialization
-	fragments      []parser.HlsFragment
+	initialization hls.Initialization
+	fragments      []hls.Fragment
 	output         output.StreamWriter
 }
 
@@ -99,7 +27,7 @@ func CreateHlsDownloader(manifestUrl string, stream output.StreamWriter) *HlsDow
 	})
 	manifest, _ := io.ReadAll(response.Body)
 
-	hlsMediaManifest := parser.HlsMediaManifest{
+	hlsMediaManifest := hls.MediaManifest{
 		ManifestUrl:  manifestUrl,
 		Manifest:     string(manifest),
 		IsLivestream: false,
@@ -117,30 +45,34 @@ func CreateHlsDownloader(manifestUrl string, stream output.StreamWriter) *HlsDow
 }
 
 func (downloader *HlsDownloader) Download(streamManager *sync.WaitGroup) {
-	var workerPool = WorkerPool{
-		requests:  make(chan Request, 10),
-		responses: make(chan ordered_queue.OrderedItem[Response], 10),
+	var queue = fragment.Queue{
+		Requests:  make(chan fragment.Request, 10),
+		Responses: make(chan ordered_queue.OrderedItem[fragment.Response], 10),
 	}
 
-	go workerPool.initialize(downloader.fragments)
-	go workerPool.run(4)
+	var genericFragments []fragment2.Generic
+	for _, frag := range downloader.fragments {
+		genericFragments = append(genericFragments, frag.Generic)
+	}
 
-	fragmentOrderedQueue := ordered_queue.CreateOrderedQueue[Response](len(downloader.fragments))
+	go queue.Initialize(genericFragments)
+	go queue.Run(4)
+
+	fragmentOrderedQueue := ordered_queue.CreateOrderedQueue[fragment.Response](len(downloader.fragments))
 
 	headers := map[string]string{
 		"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:108.0) Gecko/20100101 Firefox/108.0",
 	}
 
-	if !downloader.initialization.IsEmpty() {
-		if !downloader.initialization.ByteRange.IsEmpty() {
-			headers["Range"] = fmt.Sprintf(
-				"bytes=%d-%d",
-				downloader.initialization.ByteRange.Start,
-				downloader.initialization.ByteRange.End)
+	initialization := downloader.initialization
+	if !initialization.IsEmpty() {
+		byteRange := initialization.ByteRange
+		if !byteRange.IsEmpty() {
+			headers["Range"] = fmt.Sprintf("bytes=%d-%d", byteRange.Start, byteRange.End)
 		}
 
 		initializationResponse, _ := sophiexHttp.HttpService.Get(
-			downloader.initialization.Url,
+			initialization.Url,
 			sophiexHttp.RequestConfig{
 				Headers: headers,
 			})
@@ -148,7 +80,7 @@ func (downloader *HlsDownloader) Download(streamManager *sync.WaitGroup) {
 		downloader.output.Write(initialization)
 	}
 
-	for response := range workerPool.responses {
+	for response := range queue.Responses {
 		fragmentOrderedQueue.Enqueue(response)
 
 		dequeueFragments, hasFinished := fragmentOrderedQueue.Dequeue()
@@ -158,17 +90,13 @@ func (downloader *HlsDownloader) Download(streamManager *sync.WaitGroup) {
 			fragmentContent, _ := io.ReadAll(_fragment.Payload.Response.Body)
 			_fragment.Payload.Response.Body.Close()
 
-			if !_fragment.Payload.Fragment.Decryption.IsEmpty() {
-				keyResponse, _ := sophiexHttp.HttpService.Get(
-					_fragment.Payload.Fragment.Decryption.Uri,
-					sophiexHttp.RequestConfig{})
+			decryption := _fragment.Payload.Fragment.Decryption
+			if !decryption.IsEmpty() {
+				uri := decryption.Uri
+				keyResponse, _ := sophiexHttp.HttpService.Get(uri, sophiexHttp.RequestConfig{})
 				key, _ := io.ReadAll(keyResponse.Body)
 
-				fragmentContent, _ = crypto.AesDecrypt(
-					fragmentContent,
-					key,
-					_fragment.Payload.Fragment.Decryption.IV,
-				)
+				fragmentContent, _ = crypto.AesDecrypt(fragmentContent, key, decryption.IV)
 			}
 
 			downloader.output.Write(fragmentContent)
