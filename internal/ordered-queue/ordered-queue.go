@@ -23,37 +23,37 @@ func CreateOrderedQueue[T any](itemsNumber int) *OrderedQueue[T] {
 	}
 }
 
-func (slice *OrderedQueue[T]) Enqueue(item OrderedItem[T]) {
-	slice.items = append(slice.items, item)
+func (queue *OrderedQueue[T]) Enqueue(item OrderedItem[T]) {
+	queue.items = append(queue.items, item)
 
-	sort.Slice(slice.items, func(i, j int) bool {
-		return slice.items[i].Index < slice.items[j].Index
+	sort.Slice(queue.items, func(i, j int) bool {
+		return queue.items[i].Index < queue.items[j].Index
 	})
 }
 
-func (slice *OrderedQueue[T]) Dequeue() ([]OrderedItem[T], bool) {
-	if len(slice.items) == 0 {
+func (queue *OrderedQueue[T]) Dequeue() ([]OrderedItem[T], bool) {
+	if len(queue.items) == 0 {
 		return []OrderedItem[T]{}, false
 	}
 
-	if slice.items[0].Index != slice.current {
+	if queue.items[0].Index != queue.current {
 		return []OrderedItem[T]{}, false
 	}
 
 	cutIndex := 1
-	for i := cutIndex; i < len(slice.items); i++ {
-		if slice.items[i].Index != slice.items[i-1].Index+1 {
+	for i := cutIndex; i < len(queue.items); i++ {
+		if queue.items[i].Index != queue.items[i-1].Index+1 {
 			break
 		}
 
 		cutIndex += 1
 	}
 
-	dequeueItems := slice.items[:cutIndex]
+	dequeueItems := queue.items[:cutIndex]
 	lastItem := dequeueItems[len(dequeueItems)-1]
-	slice.current = lastItem.Index + 1
+	queue.current = lastItem.Index + 1
 
-	slice.items = slice.items[cutIndex:]
+	queue.items = queue.items[cutIndex:]
 
-	return dequeueItems, lastItem.Index == (slice.itemsNumber - 1)
+	return dequeueItems, lastItem.Index == (queue.itemsNumber - 1)
 }
