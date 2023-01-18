@@ -18,12 +18,15 @@ func DownloadFormat(format sites_extractor.DownloadableFormat, output io.WriteCl
 	case sites_extractor.Http:
 		_url := format.Url
 		go func() {
-			_, _ = httpService.GetMultiFragment(
+			_, err := httpService.GetMultiFragment(
 				_url,
 				http.RequestConfig{},
 				output,
 				downloadManager,
 			)
+			if err != nil {
+				panic(err)
+			}
 		}()
 	case sites_extractor.Hls:
 		_url := format.Url
