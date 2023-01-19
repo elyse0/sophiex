@@ -1,4 +1,4 @@
-package downloader
+package hls
 
 import (
 	"fmt"
@@ -13,13 +13,13 @@ import (
 	"sync"
 )
 
-type HlsDownloader struct {
+type Downloader struct {
 	initialization hls.Initialization
 	fragments      []hls.Fragment
 	output         output.StreamWriter
 }
 
-func CreateHlsDownloader(manifestUrl string, stream output.StreamWriter) *HlsDownloader {
+func CreateDownloader(manifestUrl string, stream output.StreamWriter) *Downloader {
 	response, _ := sophiexHttp.HttpService.Get(manifestUrl, sophiexHttp.RequestConfig{
 		Headers: map[string]string{
 			"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:108.0) Gecko/20100101 Firefox/108.0",
@@ -37,14 +37,14 @@ func CreateHlsDownloader(manifestUrl string, stream output.StreamWriter) *HlsDow
 
 	// fmt.Println(parsedManifest.Fragments)
 
-	return &HlsDownloader{
+	return &Downloader{
 		initialization: parsedManifest.Initialization,
 		fragments:      parsedManifest.Fragments,
 		output:         stream,
 	}
 }
 
-func (downloader *HlsDownloader) Download(streamManager *sync.WaitGroup) {
+func (downloader *Downloader) Download(streamManager *sync.WaitGroup) {
 	var queue = fragment.Queue{
 		Requests:  make(chan fragment.Request, 10),
 		Responses: make(chan ordered_queue.OrderedItem[fragment.Response], 10),

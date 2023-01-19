@@ -2,7 +2,7 @@ package main
 
 import (
 	"io"
-	"sophiex/internal/downloader"
+	"sophiex/internal/downloader/hls"
 	"sophiex/internal/downloader/http"
 	"sophiex/internal/output"
 	"sophiex/internal/sites_extractor"
@@ -30,7 +30,7 @@ func DownloadFormat(format sites_extractor.DownloadableFormat, output io.WriteCl
 		}()
 	case sites_extractor.Hls:
 		_url := format.Url
-		hlsDownloader := downloader.CreateHlsDownloader(_url, output)
+		hlsDownloader := hls.CreateDownloader(_url, output)
 
 		go hlsDownloader.Download(downloadManager)
 	default:
